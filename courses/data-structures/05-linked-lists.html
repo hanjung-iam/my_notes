@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>鏈結串列 (Linked Lists) · 資料結構</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="data-structures" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">資料結構</a>
+      <span class="sep">/</span>
+      <span class="current">鏈結串列 (Linked Lists)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>鏈結串列 (Linked Lists)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>資料結構</dd>
+          <dt>單元</dt><dd>Session 5</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Session5-Linked Lists PPT Handout.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">線性結構</span>
+          <span class="tag">矩陣</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>Array 適合隨機存取，但在任意位置插入/刪除很困難；<strong>Linked list</strong> 的節點不必連續，每個節點存下一個節點的位址。</li>
+          <li>用 <code>ChainNode</code>（data + link）與 <code>Chain</code>（first、last）兩個 class 實作；支援 InsertBack、Concatenate、Reverse 等操作。</li>
+          <li><strong>Circular list</strong>：最後一個節點指回第一個；存 <code>last</code> 指標比存 <code>first</code> 方便（\(O(1)\) 取得第一個）。</li>
+          <li>Sparse matrix 用 linked structure：header node + element node（down / right），建立時間 \(O(n+m+r)\)。</li>
+          <li><strong>Doubly linked list</strong>：每個節點有左右兩個 link，可雙向移動；<strong>Iterator</strong> 提供走訪任意容器的統一方式。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="array-vs-list">1. Array 與 Linked List</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Array（sequential mapping）</th><th>Linked List</th></tr></thead>
+          <tbody>
+            <tr><td>儲存方式</td><td>節點 \(a_i\) 存在位置 \(L_i\)，下一個節點在 \(L_{i+1}\)</td><td>節點在記憶體中不再連續，每個節點存下一個節點的位址</td></tr>
+            <tr><td>優點</td><td>適合隨機存取；從尾端插入/刪除有效率；適合 Stack 與 Queue</td><td>—</td></tr>
+            <tr><td>缺點</td><td>在任意位置插入/刪除節點很困難</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Singly Linked List (SLL)</strong>：每個節點恰好有一個指標欄位。</p>
+
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：串列 BAT → CAT → EAT → FAT → …</span>
+          <p><strong>在 CAT 與 EAT 之間插入 GAT</strong></p>
+          <ol>
+            <li>建立新節點 newNode，data 設為 GAT</li>
+            <li>newNode 的 link 指向 EAT</li>
+            <li>CAT 的 link 指向 newNode</li>
+          </ol>
+          <p><strong>刪除 EAT</strong></p>
+          <ol>
+            <li>找到 EAT 前一個節點 temp</li>
+            <li>delnode 設為 temp 的下一個節點</li>
+            <li>temp 的 link 指向 EAT 的下一個節點</li>
+            <li>刪除 EAT（delnode）</li>
+          </ol>
+        </div>
+      </div>
+      <p class="src">Session5-Linked Lists PPT Handout.pdf p.3–7</p>
+
+      <!-- ===================================================== -->
+      <h2 id="chain">2. Chain 的實作</h2>
+      <ul>
+        <li><code>ChainNode</code> class：data 欄位 + link 欄位；<code>Chain</code> class：支援對 ChainNode 的各種操作。</li>
+        <li>可以讓 <code>Chain</code> 成為 <code>ChainNode</code> 的 <code>friend</code>，或把 <code>ChainNode</code> 寫成 <code>Chain</code> 內的 nested class。</li>
+        <li>指標操作複習：宣告 <code>NodeA *a1=NULL;</code>、配置 <code>a1 = new NodeA;</code>、釋放 <code>delete a1; a1=NULL;</code>、存取成員 <code>a1-&gt;memData</code> 或 <code>(*a1).memData</code>。</li>
+      </ul>
+      <pre><span class="pseudo-label">基本操作（C++）</span><code>void Chain::Create2()
+{
+    // Create and set the fields of 2nd node
+    ChainNode* second = new ChainNode(20,0);
+    // Create and set the fields of 1st node
+    first = new ChainNode(10,second);
+}
+
+void Chain::Insert50(ChainNode *x)
+{
+    if(first) // Insert after x
+        x->link = new ChainNode(50, x->link);
+    else      // Insert into empty list
+        first = new ChainNode(50);
+}
+
+void Chain::Delete(ChainNode *x, ChainNode *y)
+{  // x is the node to be deleted and
+   // y is the node preceding x
+    if(x==first) first = first->link;
+    else y->link = x->link;
+    delete x;
+    x=NULL;
+}</code></pre>
+
+      <h3 id="template-chain">Template Chain：InsertBack、Concatenate、Reverse</h3>
+      <p>Template 版的 <code>Chain&lt;T&gt;</code> 同時記錄 <code>first</code> 與 <code>last</code>。</p>
+      <pre><span class="pseudo-label">Chain&lt;T&gt; 操作（C++）</span><code>template &lt; class T &gt;
+void Chain&lt;T&gt;::InsertBack(const T&amp; e)
+{
+    if(first) { // Non-empty chain
+        last->link = new ChainNode&lt;T&gt;(e);
+        last = last->link;
+    }
+    else // Insert into an empty chain
+        first = last = new ChainNode&lt;T&gt;(e);
+}
+
+template &lt; class T &gt;
+void Chain&lt;T&gt;::Concatenate(Chain&lt;T&gt;&amp; b)
+{  // b is concatenated to the end of *this
+    if ( first ) { last->link = b.first; last = b.last; }
+    else { first = b.first; last = b.last; }
+    b.first = b.last = 0;
+}
+
+template &lt; class T &gt;
+void Chain&lt;T&gt;::Reverse(void)
+{  // Turn a chain,(a1, …, an) into (an, …, a1)
+    ChainNode&lt;T&gt; *current = first, *previous = NULL;
+    while (current) {
+        ChainNode&lt;T&gt; *r = previous;
+        previous = current;       // r is behind the previous
+        current = current->link;  // move current to next node
+        previous->link = r;       // link previous to previous node
+    }
+    first = previous;
+}</code></pre>
+      <p class="src">Session5-Linked Lists PPT Handout.pdf p.8–20</p>
+
+      <!-- ===================================================== -->
+      <h2 id="circular">3. Circular Lists</h2>
+      <ul>
+        <li>Singly-linked circular list：最後一個節點的 link 指向第一個節點。</li>
+        <li>判斷最後一個節點：<code>if(current-&gt;link == first)</code>；可以從任何位置開始走訪。</li>
+        <li>在最前面插入新節點：新節點的 link 指向 first、first 改為新節點，還要走到最後一個節點，把它的 link 指向新節點。</li>
+      </ul>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">存 last 比存 first 方便</span>
+          只有 first 時，找最後一個節點要 \(O(N)\)；若有 last 指標，用 <code>last-&gt;link</code> 就能在 \(O(1)\) 取得第一個節點。
+        </div>
+      </div>
+      <pre><span class="pseudo-label">CircularList::InsertFront（C++）</span><code>template&lt;class T&gt;
+void CircularList&lt;T&gt;::InsertFront(const T&amp; e)
+{
+    ChainNode&lt;T&gt;* newNode = new ChainNode&lt;T&gt;(e);
+    if(last){ // nonempty list
+        newNode->link = last->link;
+        last->link = newNode;
+    }
+    else{ // empty list
+        last = newNode;
+        newNode->link = newNode;
+    }
+}</code></pre>
+      <p>如何表示「空」串列？加入一個 dummy node 「<strong>Header</strong>」。</p>
+      <p class="src">Session5-Linked Lists PPT Handout.pdf p.21–25</p>
+
+      <!-- ===================================================== -->
+      <h2 id="sparse-matrix">4. 用 Linked Structure 表示 Sparse Matrix</h2>
+      <p>用循序陣列依 row-major 存非零項（見 Session 3）時，要存取特定 column 很困難 → 改用 circular lists 表示。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>節點</th><th>欄位</th></tr></thead>
+          <tbody>
+            <tr><td>Header node（每個 row / column 各一）</td><td><strong>down</strong>：該 column 第一個非零項；<strong>right</strong>：該 row 第一個非零項；<strong>next</strong>：下一個 header node。Row \(i\) 的 header 同時也是 column \(i\) 的 header。</td></tr>
+            <tr><td>Element node（每個非零項）</td><td>row、col、value；<strong>down</strong>：同一 column 的下一個非零項；<strong>right</strong>：同一 row 的下一個非零項</td></tr>
+            <tr><td>Header of header nodes</td><td>header nodes 組成的 circular list 的開頭，存矩陣的維度</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>\(n\times m\) 的稀疏矩陣有 \(r\) 個非零項時，需要的節點總數為 \(\max\{n,m\}+r+1\)。</li>
+        <li>輸入格式：第一行是矩陣維度與非零項數；之後每行是一個 triple \((i,j,a_{ij})\)，依 row 排序、同 row 內依 column 排序。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>建立步驟</th><th>時間</th></tr></thead>
+          <tbody>
+            <tr><td>建立 header nodes</td><td>\(O(\max\{n,m\})\)</td></tr>
+            <tr><td>建立非零項節點</td><td>\(O(r)\)</td></tr>
+            <tr><td>關閉 column lists</td><td>\(O(\max\{n,m\})\)</td></tr>
+            <tr><td>連接 header nodes</td><td>\(O(\max\{n,m\})\)</td></tr>
+            <tr><td><strong>總計</strong></td><td>\(O(\max\{n,m\}+r)=O(n+m+r)\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Session5-Linked Lists PPT Handout.pdf p.27–33</p>
+
+      <!-- ===================================================== -->
+      <h2 id="doubly">5. Doubly Linked Lists</h2>
+      <p>每個節點有兩個 link 欄位（left、right），可以往兩個方向走訪；可做成 linear list 或 circular list。</p>
+      <pre><span class="pseudo-label">刪除節點 x / 在 x 之後插入節點 p（C++）</span><code>// Delete x
+x->left->right = x->right;
+x->right->left = x->left;
+delete x;
+
+// Insert p after x
+p->left = x;  p->right = x->right;
+x->right->left = p;
+x->right = p;</code></pre>
+      <p>講義列為自學主題：用 linked list 表示多項式、Linked stacks and queues。</p>
+      <p class="src">Session5-Linked Lists PPT Handout.pdf p.35–38</p>
+
+      <!-- ===================================================== -->
+      <h2 id="iterator">6. Iterator：走訪容器的元素</h2>
+      <ul>
+        <li>輸出所有整數、求最大/最小/平均、求和/乘積/平方和… 這些操作都需要走訪容器中的每個元素。</li>
+        <li>Array 用 <code>for (int i = 0; i &lt; n; i++)</code>；Linked list 用 <code>for (ChainNode&lt;int&gt; *ptr=first; ptr!=0; ptr=ptr-&gt;link)</code>。</li>
+        <li><strong>Iterator</strong>：指向容器中某個元素的指標；用 <code>*</code> 存取元素，支援前置/後置 <code>++</code>。</li>
+        <li>優點：可走訪任意資料型別的容器、保證執行期範圍安全、適用所有 STL 演算法、適合團隊開發；缺點：可能犧牲一些效能。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>C++ Iterator 種類</th><th>能力</th></tr></thead>
+          <tbody>
+            <tr><td>Input iterator</td><td>讀取；前置/後置 <code>++</code></td></tr>
+            <tr><td>Output iterator</td><td>寫入；前置/後置 <code>++</code></td></tr>
+            <tr><td>Forward iterator</td><td>前置/後置 <code>++</code></td></tr>
+            <tr><td>Bidirectional iterator</td><td>前置/後置 <code>++</code> 與 <code>--</code></td></tr>
+            <tr><td>Random access iterator</td><td>可以任意跳躍</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>所有 iterator 都支援 <code>==</code>、<code>!=</code>、<code>*</code>。Chain 的 forward iterator 以 nested class <code>ChainIterator</code> 實作，提供 <code>begin()</code>（回傳 <code>ChainIterator(first)</code>）與 <code>end()</code>（回傳 <code>ChainIterator(0)</code>），即可搭配 STL 演算法，例如 <code>std::accumulate(myChain.begin(), myChain.end(), 0)</code>。</p>
+      <p class="src">Session5-Linked Lists PPT Handout.pdf p.39–48</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. Array 和 linked list 各適合什麼情況？</summary>
+        <div class="answer">
+          <p>Array 適合隨機存取、從尾端插入刪除；但在任意位置插入刪除很困難。Linked list 的節點不必連續，插入刪除只需改指標。</p>
+          <p class="src">Session5-Linked Lists PPT Handout.pdf p.3, p.5</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 從 SLL 刪除一個節點 EAT 的步驟？</summary>
+        <div class="answer">
+          <p>找到 EAT 前一個節點 temp → delnode 設為 temp 的下一個 → temp 的 link 指向 EAT 的下一個 → 刪除 EAT。</p>
+          <p class="src">Session5-Linked Lists PPT Handout.pdf p.7</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. Circular list 為什麼存 last 指標比較方便？</summary>
+        <div class="answer">
+          <p>有 last 時，<code>last-&gt;link</code> 就是第一個節點，\(O(1)\)；只有 first 時要找到最後一個節點需要 \(O(N)\)。</p>
+          <p class="src">Session5-Linked Lists PPT Handout.pdf p.23</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 用 linked structure 表示 \(n\times m\)、\(r\) 個非零項的稀疏矩陣，需要幾個節點？建立的時間？</summary>
+        <div class="answer">
+          <p>\(\max\{n,m\}+r+1\) 個節點；建立時間 \(O(n+m+r)\)。</p>
+          <p class="src">Session5-Linked Lists PPT Handout.pdf p.31, p.33</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. Doubly linked list 刪除節點 x 要改哪兩個指標？</summary>
+        <div class="answer">
+          <p><code>x-&gt;left-&gt;right = x-&gt;right;</code> 與 <code>x-&gt;right-&gt;left = x-&gt;left;</code>，再 <code>delete x</code>。</p>
+          <p class="src">Session5-Linked Lists PPT Handout.pdf p.36</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Session5-Linked Lists PPT Handout.pdf</code>　p.1–48（Yi-Shin Chen, Data Structures）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

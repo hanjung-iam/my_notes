@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>貪婪演算法 (Greedy Algorithms) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">貪婪演算法 (Greedy Algorithms)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>貪婪演算法 (Greedy Algorithms)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 13</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-13.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">貪婪演算法</span>
+          <span class="tag">圖論</span>
+          <span class="tag">編碼</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>Greedy 演算法的兩個性質：<strong>Greedy Choice</strong>（每次做看起來最好的選擇）與 <strong>Optimal Substructure</strong>（選完後變成子問題）。</li>
+          <li>最重要也最難的是證明 <strong>greedy choice 不會錯</strong>，常用 <strong>Cut-and-Paste argument</strong>：從一個最佳解出發，把其中某個選擇換成 greedy choice。</li>
+          <li>Activities Selection：依<strong>最早結束時間</strong>選才是最佳；Fractional Knapsack：先拿<strong>密度 \(v_k/w_k\) 最大</strong>的。</li>
+          <li>樹上的 Vertex Cover：連到葉子的頂點 \(u\) 一定可以放守衛，DFS 實作，\(O(n)\)。</li>
+          <li>Huffman Code：反覆合併頻率最小的兩個字元，得到最佳 prefix code。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="coin-changing">1. 找零錢與 Greedy 的概念</h2>
+      <ul>
+        <li>硬幣面額有 $1、$2、$5、$10，要用最少的硬幣湊出金額 \(Z\)：自然會先盡量用 $10，再盡量用 $5、$2，最後用 $1 補足。</li>
+        <li>例：$39 = $10 + $10 + $10 + $5 + $2 + $2</li>
+        <li>每次都給出面額最大的硬幣，「貪心地」讓剩餘金額下降最快，並<strong>希望</strong>之後需要的硬幣數會比較少。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Greedy 演算法的性質</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td>Greedy Choice</td><td>每次都做一個看起來朝向最佳答案的好選擇</td></tr>
+            <tr><td>Optimal Substructure</td><td>做完選擇後，原問題可以轉換成子問題</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">最難的部分：證明 greedy choice 沒有錯</span>
+          Optimal substructure 通常很容易看出來，但上面的找零方法看似正確，在面額為 $1、$4、$5 且 \(Z=8\) 時就<strong>不成立</strong>。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-13.pdf p.3–6</p>
+
+      <!-- ===================================================== -->
+      <h2 id="activities">2. Activities Selection</h2>
+      <p>有 \(n\) 個活動，各有不同的開始與結束時間；時間重疊的活動不能同時參加。要怎麼參加最多活動？</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>選擇策略</th><th>結果</th></tr></thead>
+          <tbody>
+            <tr><td>最短持續時間優先</td><td>不一定最佳，但活動數 \(\ge\)（任何解的活動數）/ 2</td></tr>
+            <tr><td>最早開始時間優先</td><td>可能更差，與最佳解之間沒有任何界限</td></tr>
+            <tr><td><strong>最早結束時間優先</strong></td><td><strong>最佳解</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="activities-proof">證明：最早結束時間的 greedy choice 不會錯</h3>
+      <p>令 \(A\) 為結束時間最早的活動。要證明<strong>某個</strong>最佳解也會選 \(A\)（不需要每個最佳解都選 \(A\)）。</p>
+      <ol>
+        <li>令 OPT 為活動數最多的集合。若 OPT 包含 \(A\)，完成。</li>
+        <li>否則 OPT 一定有一個活動 \(A'\) 與 \(A\) 重疊（否則可以把 \(A\) 加進 OPT，矛盾）。</li>
+        <li>而且 \(A'\) 是 OPT 中<strong>唯一</strong>與 \(A\) 重疊的活動（否則其中一個的結束時間比 \(A\) 早，矛盾）。</li>
+        <li>把 OPT 中的 \(A'\) 換成 \(A\)，所有活動仍不重疊，大小與 OPT 相同 → 也是最佳解，且包含 \(A\)。</li>
+      </ol>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Cut-and-Paste argument</span>
+          從一個最佳解 OPT 出發，把 OPT 的某個選擇換成 greedy choice。既然 greedy choice 不會錯，就可以先做這個選擇，再專心找「一定包含這個選擇」的最佳解 → 變成子問題，可以遞迴。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-13.pdf p.7–16</p>
+
+      <!-- ===================================================== -->
+      <h2 id="knapsack">3. Knapsack 與 Fractional Knapsack</h2>
+      <h3 id="knapsack-01">Knapsack Problem</h3>
+      <ul>
+        <li>\(n\) 個物品 \(I_1,\dots,I_n\)，物品 \(I_k\) 重量 \(w_k\)、價值 \(v_k\)；背包重量上限 \(W\)。怎麼裝才能讓總價值最大？</li>
+        <li>「先拿最有價值的」或「先拿密度最大（\(v_k/w_k\) 最大）的」都不一定得到最佳解；事實上目前<strong>沒有已知的多項式時間演算法</strong>。</li>
+      </ul>
+      <h3 id="knapsack-fractional">Fractional Knapsack Problem</h3>
+      <ul>
+        <li>把物品想成「蛋糕」，每個物品可以拿任意比例。拿物品 \(I_k\) 的比例 \(c\) → 重量 \(c\cdot w_k\)、價值 \(c\cdot v_k\)。
+          <br>例：原本重量 20、價值 100；拿 75% → 重量 15、價值 75。</li>
+        <li>這時「<strong>先拿密度最大的</strong>」就成立了，正確性可用 Cut-and-Paste argument 證明。</li>
+        <li>拿了最密的物品（greedy choice）之後，專心找一定包含它的最佳解 → 子問題，可以遞迴。</li>
+      </ul>
+      <p class="src">Algo-Lecture-13.pdf p.17–20</p>
+
+      <!-- ===================================================== -->
+      <h2 id="vertex-cover">4. 樹上的 Vertex Cover（Greedy 解法）</h2>
+      <p>問題同 Lecture 11：在無向有根樹 \(T\) 放最少守衛，使每條邊都被保護。DP 可以線性時間解，但有一個簡單的觀察：</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">觀察</span>
+          若某條邊連接頂點 \(u\) 與一個葉子，則在 \(u\) 放守衛來保護這條邊<strong>不會錯</strong>（可用 Cut-and-Paste argument 證明）。
+        </div>
+      </div>
+      <ul>
+        <li>當 \(u\) 連到葉子時，就在 \(u\) 放守衛，再找能覆蓋「剩下的邊」的最少守衛。</li>
+        <li>移除 \(u\) 和所有連到 \(u\) 的邊，得到對應的子問題；沒有邊需要覆蓋時就完成。</li>
+        <li>移除 \(u\) 可能產生多棵樹，把每棵樹當成獨立的子問題即可。</li>
+        <li>可以用 Depth-First-Search 輕鬆實作，總時間和 DP 一樣是 \(O(n)\)，但為什麼正確的道理簡單得多。</li>
+      </ul>
+      <p class="src">Algo-Lecture-13.pdf p.21–30</p>
+
+      <!-- ===================================================== -->
+      <h2 id="huffman">5. Huffman Code</h2>
+      <h3 id="encoding">固定長度 vs 變動長度編碼</h3>
+      <ul>
+        <li><strong>Fixed-length encoding</strong>：每個字元用相同 bit 數（例如 ASCII、Unicode）。</li>
+        <li><strong>Variable-length encoding</strong>：出現頻率高的字元用較少 bits、頻率低的用較多 bits。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：檔案只有 a–f，a 出現 45K 次、其他各 11K 次（共 100K 字元）</span>
+          <ul>
+            <li>固定長度：每字元 \(\lceil\log 6\rceil=3\) bits → 共 300K bits</li>
+            <li>變動長度 a=0、b=100、c=101、d=110、e=1110、f=1111 → \(45K\cdot1+33K\cdot3+22K\cdot4=232K\) bits</li>
+            <li>編碼：abbcada → 010010010101100；解碼可以唯一還原：010010010101100 → a10010010101100 → ab10010101100 → …</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 id="prefix-code">Prefix Code</h3>
+      <ul>
+        <li>能唯一解碼的原因：這是一個 <strong>prefix code</strong>，每個字元的編碼都不是其他字元編碼的前綴。</li>
+        <li>Prefix code 可以用 <strong>prefix code tree</strong> 表示：leaf = 字元，root-to-leaf path = codeword。</li>
+        <li>目標：給定字元 \(c_1,\dots,c_n\)，\(c_j\) 出現 \(f(c_j)\) 次，設計 codeword \(w(c_j)\) 使
+          \[\sum_j |w(c_j)|\cdot f(c_j)\]
+          最小。</li>
+      </ul>
+
+      <h3 id="huffman-greedy">Huffman 的 Greedy Choice</h3>
+      <p>1952 年，David Huffman（當時是 MIT 博士生）提出求最佳 prefix code 的 greedy 演算法：</p>
+      <ol>
+        <li>最佳樹中<strong>沒有 degree-1 的節點</strong>（若有，移除它可以得到更好的編碼）。</li>
+        <li>因此最遠的 leaf 一定和另一個 leaf 共用同一個 parent。</li>
+        <li><strong>Greedy Choice</strong>：令 \(c\)、\(c'\) 為頻率最小的兩個字元，存在一棵最佳樹把 \(c\)、\(c'\) 放在最遠的 leaves，且共用同一個 parent（可用 cut-and-paste 證明）。</li>
+      </ol>
+      <p>令 \(c\)、\(c'\) 的 parent 為 \(z\)，\(w(z)\) 為 root 到 \(z\) 路徑上的編碼：</p>
+      \[\begin{aligned}
+      \sum |w(c_j)|\cdot f(c_j)
+      &amp;= |w(c)|\cdot f(c)+|w(c')|\cdot f(c')+\text{other terms} \\
+      &amp;= \underbrace{f(c)+f(c')}_{\text{independent of prefix code tree}}+|w(z)|\big(f(c)+f(c')\big)+\text{other terms}
+      \end{aligned}\]
+      <p>所以只要最小化 \(|w(z)|(f(c)+f(c'))+\text{other terms}\)。把 \(z\) 想成一個頻率為 \(f(c)+f(c')\) 的新字元 → 形式相同的問題 → 可以遞迴！</p>
+
+      <pre><span class="pseudo-label">Huffman(S) — build Huffman code tree</span><code>1. Find least frequent chars c and c'
+2. Remove c and c' from S
+3. Add a new char z with frequency f(c) + f(c') to S
+4. T = Huffman(S)
+5. Connect two leaves c and c' to z in T
+6. Return T</code></pre>
+      <p class="src">Algo-Lecture-13.pdf p.31–46</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 舉一個「每次給最大面額硬幣」會失敗的例子。</summary>
+        <div class="answer">
+          <p>硬幣面額為 $1、$4、$5，\(Z=8\)。</p>
+          <p class="src">Algo-Lecture-13.pdf p.6</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Activities Selection 中，三種選擇策略哪一種是最佳的？其他兩種表現如何？</summary>
+        <div class="answer">
+          <p>最早結束時間優先是最佳的。最短持續時間優先至少有最佳解的一半；最早開始時間優先與最佳解之間沒有界限。</p>
+          <p class="src">Algo-Lecture-13.pdf p.10–12</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 什麼是 Cut-and-Paste argument？</summary>
+        <div class="answer">
+          <p>從一個最佳解 OPT 出發，把 OPT 中的某個選擇換成 greedy choice，證明結果仍是最佳解，因此 greedy choice 不會錯。</p>
+          <p class="src">Algo-Lecture-13.pdf p.16</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 為什麼 Fractional Knapsack 可以用 greedy，0/1 Knapsack 卻不行？</summary>
+        <div class="answer">
+          <p>0/1 Knapsack 用「先拿最有價值」或「先拿最密」都不一定最佳，且目前沒有已知的多項式時間演算法；允許拿任意比例後，「先拿密度最大的」就是最佳的（可用 Cut-and-Paste 證明）。</p>
+          <p class="src">Algo-Lecture-13.pdf p.18–20</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. Huffman 演算法每一步做什麼？</summary>
+        <div class="answer">
+          <p>找出頻率最小的兩個字元 \(c\)、\(c'\)，移除它們並加入頻率為 \(f(c)+f(c')\) 的新字元 \(z\)，遞迴建樹後把 \(c\)、\(c'\) 接到 \(z\) 下面。</p>
+          <p class="src">Algo-Lecture-13.pdf p.46</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-13.pdf</code>　p.1–46（CS 4311 Introduction to Algorithms, Lecture 13）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

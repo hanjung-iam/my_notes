@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我的課程筆記</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="home" data-root="./">
+
+  <main class="container">
+    <header class="page-head">
+      <h1>📚 我的課程筆記</h1>
+      <p class="lead">把上課講義和手寫筆記整理成重點，複習時一眼找到。</p>
+    </header>
+
+    <div class="toolbar">
+      <label class="search">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input id="search-input" type="search" placeholder="搜尋筆記標題、標籤…" aria-label="搜尋筆記">
+      </label>
+      <div id="tag-bar" class="tag-bar" aria-label="標籤篩選"></div>
+    </div>
+
+    <section id="courses-section">
+      <h2 class="section-title">課程</h2>
+      <div id="course-grid" class="card-grid"></div>
+    </section>
+
+    <section id="results-section" hidden>
+      <h2 id="results-title" class="section-title"></h2>
+      <div id="results" class="card-grid"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+
+  <script src="data/courses.js"></script>
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

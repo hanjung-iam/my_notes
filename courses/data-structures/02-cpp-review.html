@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C++ 複習 (C++ Review) · 資料結構</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="data-structures" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">資料結構</a>
+      <span class="sep">/</span>
+      <span class="current">C++ 複習 (C++ Review)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>C++ 複習 (C++ Review)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>資料結構</dd>
+          <dt>單元</dt><dd>Session 2</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Session2 - C++ Review Handout.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">C++</span>
+          <span class="tag">物件導向</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>Data Abstraction</strong>：規格與實作分離；<strong>Data Encapsulation</strong>：對外隱藏實作細節。</li>
+          <li><strong>Reference vs Pointer</strong>：pointer 可以是 NULL、可以改指向；reference 不能是 NULL、初始化時就必須綁定且不能改。</li>
+          <li>C++ 用 <code>new</code> / <code>delete</code> 動態配置記憶體；用 <code>new</code> 產生的指標一定要 <code>delete</code>（陣列用 <code>delete []</code>）。</li>
+          <li>Class：constructor 建立物件時呼叫、destructor 物件離開 scope 或被刪除時呼叫；編譯器會自動產生 4 個預設方法。</li>
+          <li>Inheritance 是 IS-A 關係；Static polymorphism（overloading，編譯時決定）vs Dynamic polymorphism（<code>virtual</code>，執行時決定）。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="paradigms">1. 程式設計典範與物件導向</h2>
+      <ul>
+        <li><strong>Declarative programming</strong>：表達計算的邏輯，不描述控制流程（例：Database）。</li>
+        <li><strong>Imperative programming</strong>：用敘述改變程式的狀態。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Algorithmic Decomposition</th><th>Object-Oriented Decomposition</th></tr></thead>
+          <tbody>
+            <tr><td>拆解方式</td><td>把軟體拆成步驟，步驟用函式實作</td><td>把軟體拆成物件，物件互動來解決問題</td></tr>
+            <tr><td>例子</td><td>C、Pascal</td><td>C++</td></tr>
+            <tr><td>資料</td><td>資料結構是次要考量；所有步驟都看得到、存取得到資料，無法阻止不相關的程式碼存取</td><td>重用性與彈性高</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><strong>Object</strong>：做計算的基本單位，包含資料與程序函式。</li>
+        <li><strong>OOP</strong>：物件是基本建構單元；每個物件都是某個 class 的 instance；class 之間有繼承關係。</li>
+        <li><strong>Object-Oriented Language（C++）</strong>：支援物件、物件須屬於 class、支援繼承。<strong>Object-Based Language（講義例：Java）</strong>：支援物件、物件須屬於 class。</li>
+        <li>C++ 由 Bjarne Stroustrup 創造，是 C 的強化版；標準有 C++98、C++03、C++TR1、C++11、C++14、C++17、C++20、C++23。</li>
+      </ul>
+      <p class="src">Session2 - C++ Review Handout.pdf p.2–9</p>
+
+      <!-- ===================================================== -->
+      <h2 id="data-types">2. Data Type 與 ADT</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>概念</th><th>意義</th><th>講義比喻</th></tr></thead>
+          <tbody>
+            <tr><td>Data Abstraction</td><td>資料物件的<strong>規格</strong>與<strong>實作</strong>分離</td><td>只知道按鈕做什麼，不知道怎麼做到</td></tr>
+            <tr><td>Data Encapsulation（Information Hiding）</td><td>對外部隱藏實作細節</td><td>透過按鈕互動，不碰內部電路（不允許打開外殼）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><strong>Data type</strong> = 一組物件 + 一組操作。例：int 的物件為 0, +1, -1, …, MAXINT, MININT；操作為 +, -, *, /, ==, &lt;= 等。</li>
+        <li>C++ 基本型別：char、int、float、double…；修飾詞：short、long、signed、unsigned。</li>
+        <li>資料分組：Array（相同基本型別的元素集合）、struct（C）與 class（C++）。</li>
+      </ul>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">ADT 的優點</span>
+          簡化；每個物件可以分開測試與除錯；重用性；彈性（可以自由修改內部實作而不影響其他程式碼）。
+        </div>
+      </div>
+      <p class="src">Session2 - C++ Review Handout.pdf p.11–15</p>
+
+      <!-- ===================================================== -->
+      <h2 id="basic-cpp">3. 基本 C++</h2>
+      <h3 id="organization">程式組織與 Scope</h3>
+      <ul>
+        <li>Source file（<code>*.cpp</code>）存放原始碼；Header file（<code>*.h</code>）存放宣告，用 <code>#ifndef / #define / #endif</code> 避免重複引入。</li>
+        <li>Scope：Local scope（區塊內宣告）、Class scope、Namespace scope、File scope。</li>
+        <li>資料宣告：常數值（5、'a'、4.3）、變數（<code>double income;</code>）、常數變數（宣告時就固定，<code>const int MAX=500;</code>）、列舉型別（<code>enum semester {SUMMER, FALL, SPRING};</code>）。</li>
+        <li>註解：<code>//</code> 單行；<code>/* */</code> 多行。</li>
+        <li>函式由函式名稱、參數列（輸入）、回傳型別（輸出）或 void、函式本體組成。</li>
+      </ul>
+
+      <h3 id="reference-pointer">Pointer 與 Reference</h3>
+      <ul>
+        <li><strong>Pointer</strong>：存放物件的記憶體位址，例如 <code>int i = 25; int* np; np = &amp;i;</code></li>
+        <li><strong>Reference</strong>（C++ 才有）：物件的別名 (alias)，例如 <code>int i=5; int&amp; j=i; i=7; cout &lt;&lt; j;</code></li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Pointer</th><th>Reference</th></tr></thead>
+          <tbody>
+            <tr><td>可以是 NULL？</td><td>可以</td><td>不行</td></tr>
+            <tr><td>初始化</td><td>不一定</td><td>初始化時一定要綁定變數</td></tr>
+            <tr><td>可以改變目標？</td><td>可以指向不同目標</td><td>不能改變</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><span class="pseudo-label">C++（講義範例）</span><code>int * ptr = NULL;   // address = 0
+int &amp; ref = NULL;   // syntax error
+int x= 10, y=20;
+ptr = &amp;x ;
+ptr = &amp;y ;          // ok!
+int &amp; ref = x;
+&amp;ref = y;           // compile error</code></pre>
+
+      <h3 id="parameter-passing">參數傳遞與 Overloading</h3>
+      <ul>
+        <li><strong>Call by value</strong>：值被複製到區域儲存空間，不會修改原本的資料。</li>
+        <li><strong>Call by pointer</strong>：會修改原本的物件（例：<code>swap(int *a, int *b)</code>）。</li>
+        <li><strong>Function overloading</strong>：C++ 可以定義同名但參數不同的函式（例：<code>Max(int, int)</code>、<code>Max(int, int, int)</code>、<code>Max(float, int)</code>…）；C 不行。</li>
+      </ul>
+
+      <h3 id="memory">動態記憶體配置</h3>
+      <ul>
+        <li>C：<code>malloc</code>、<code>free</code>、<code>realloc</code>… 有 memory leak 與 memory fragmentation 問題。</li>
+        <li>C++：使用關鍵字 <code>new</code> 與 <code>delete</code>。</li>
+      </ul>
+      <pre><span class="pseudo-label">C++（講義範例）</span><code>int * y = new int ;
+delete y ;
+// allocate an int array.
+int * data = new int [10];
+/* make sure you use 'delete' for pointer generated by 'new'. */
+delete [] data ;</code></pre>
+
+      <h3 id="exceptions">例外處理</h3>
+      <ul>
+        <li>用來處理執行期錯誤或特殊狀況，讓程式邏輯更清楚。</li>
+        <li>每個 <code>try</code> 區塊後面接零或多個 <code>catch</code> 區塊，依序檢查直到型別相符。</li>
+        <li><code>catch (char* e)</code> 捕捉 char* 型別；<code>catch (bad_alloc e)</code> 捕捉系統定義的 bad_alloc；<code>catch (…)</code> 捕捉所有例外。</li>
+        <li><code>throw</code> 之後的敘述不會執行，例外會往呼叫者一路傳遞（講義 p.31 以 main → func1 → func2 示範）。</li>
+      </ul>
+      <p class="src">Session2 - C++ Review Handout.pdf p.17–31</p>
+
+      <!-- ===================================================== -->
+      <h2 id="class">4. C++ Class</h2>
+      <p>Class 支援 data abstraction 與 encapsulation：<strong>規格放在 header file</strong>（例：<code>Rectangle.h</code>），<strong>實作放在 source file</strong>（例：<code>Rectangle.cpp</code>）。</p>
+      <pre><span class="pseudo-label">Rectangle.h（講義範例）</span><code>class Rectangle {
+public:   // the following members are public
+    Rectangle ( );        // constructor
+    ~Rectangle( );        // destructor
+    int GetHeight ( );    // return the height of the rectangle
+    int GetWidth ( );     // return the width of the rectangle
+private:  // the following members are private
+    int xLow, yLow, height, width;
+    // (xLow, yLow) are the coordinates of the bottom left corner of rec.
+};
+
+// Rectangle.cpp
+int Rectangle::GetHeight() {return height;}
+int Rectangle::GetWidth() {return width;}</code></pre>
+      <ul>
+        <li>成員函式在 class 定義外實作時，要加上 <code>Rectangle::</code> 前綴。</li>
+        <li>存取成員：物件用 <code>.</code>；透過指標用 <code>-&gt;</code>。</li>
+        <li><code>private</code> 成員在 class 外存取會 compile error（C 的 struct 沒有這種保護）。</li>
+      </ul>
+
+      <h3 id="constructor-destructor">Constructor 與 Destructor</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Constructor</th><th>Destructor</th></tr></thead>
+          <tbody>
+            <tr><td>用途</td><td>初始化資料成員</td><td>物件消失時刪除資料成員</td></tr>
+            <tr><td>何時呼叫</td><td>物件被建立時</td><td>物件離開 scope 或被 delete 時自動呼叫</td></tr>
+            <tr><td>名稱</td><td>與 class 同名</td><td>class 名稱加上前綴 <code>~</code></td></tr>
+            <tr><td>回傳</td><td>沒有回傳型別或回傳值</td><td>沒有回傳型別或回傳值，也不接受參數</td></tr>
+            <tr><td>數量</td><td>可以有多個</td><td>只能有一個</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>Constructor 種類：<strong>Default</strong>（無參數）<code>Rectangle();</code>、<strong>Augmented</strong>（有參數）<code>Rectangle(int, int, int, int);</code>、<strong>Copy</strong> <code>Rectangle(const Rectangle&amp;);</code>（若用 STL container 存放你的物件，必須指定）。</li>
+        <li>沒有自行定義時，編譯器會產生 <strong>4 個預設方法</strong>：default constructor、copy constructor、destructor、assignment operator（<code>operator=</code>）。</li>
+        <li>C++ 的 <code>struct</code> 也可以有 <code>public</code> 等存取修飾；講義 p.43 對照 C++ 的 class 與 struct 寫法。</li>
+      </ul>
+      <p class="src">Session2 - C++ Review Handout.pdf p.33–43</p>
+
+      <!-- ===================================================== -->
+      <h2 id="inheritance">5. 繼承與多型</h2>
+      <ul>
+        <li><strong>Inheritance</strong>：定義物件間的 <strong>IS-A</strong> 關係。若 B 是 A 的特化版本（A 比 B 一般），則 B IS-A A；A 的成員（資料與函式）會隱含地複製到 B → 程式碼重用。</li>
+        <li>例：<code>Polygon</code>（base class）→ <code>Triangle</code>、<code>Rectangle</code>（derived class）。</li>
+        <li>繼承時可以用 <code>public</code>、<code>protected</code>、<code>private</code> 三種 access specifier（<code>class Triangle : public Polygon</code>）。</li>
+        <li><strong>Specialization</strong>：把非共用成員放在 base class 的 private 區塊（derived class 無法存取）；在 derived class 重新宣告成員 = <strong>overriding</strong>。Overriding 後仍可用 <code>Polygon::CalArea();</code> 呼叫 base class 的版本。</li>
+      </ul>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          p.46–48 以圖示說明三種 access specifier 下，base class 的 private / protected / public 成員（x、y、z）在 derived class 中變成什麼存取層級；這些對應關係在 PDF 中沒有可讀取的文字，請對照講義圖示。
+        </div>
+      </div>
+
+      <h3 id="polymorphism">Static vs Dynamic Polymorphism</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Static Polymorphism</th><th>Dynamic Polymorphism</th></tr></thead>
+          <tbody>
+            <tr><td>機制</td><td>Function overloading</td><td>透過共同介面操作不同物件（<code>virtual</code> 函式）</td></tr>
+            <tr><td>Binding</td><td>Static binding：型別在<strong>編譯時</strong>決定</td><td>Dynamic binding：型別在<strong>執行時</strong>決定</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><span class="pseudo-label">Dynamic Polymorphism（講義範例節錄）</span><code>class Student {
+public:
+    string name;
+    Student (string name): name (name) {}
+    virtual void print () {cout &lt;&lt; name &lt;&lt; endl ; }
+};
+class MedicalStudent : public Student {
+public:
+    string specialty;
+    MedicalStudent (string name, string specialty):
+        specialty (specialty), Student(name) {};
+    virtual void print () {cout &lt;&lt; name &lt;&lt; ": " &lt;&lt; specialty &lt;&lt; endl ; }
+};
+// students[i]->print(); 會依物件實際型別呼叫對應的 print()</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Dynamic Binding 的優點</th><th>缺點</th></tr></thead>
+          <tbody>
+            <tr><td>理想的 data abstraction；OOP 的強大機制（Design Pattern）；廣泛用於大型軟體設計</td><td>效能下降：需要額外記憶體存 virtual function table，存取時也有額外的執行成本</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Session2 - C++ Review Handout.pdf p.44–53</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. Data abstraction 和 data encapsulation 有什麼不同？</summary>
+        <div class="answer">
+          <p>Data abstraction 是把資料物件的規格與實作分開；data encapsulation 是對外部隱藏實作細節。</p>
+          <p class="src">Session2 - C++ Review Handout.pdf p.11</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 列出 pointer 和 reference 的三個差異。</summary>
+        <div class="answer">
+          <p>Pointer 可以是 NULL，reference 不行；reference 初始化時必須綁定變數；pointer 可以改指向其他目標，reference 不能改。</p>
+          <p class="src">Session2 - C++ Review Handout.pdf p.23</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 沒有自行定義時，編譯器會自動產生哪 4 個方法？</summary>
+        <div class="answer">
+          <p>Default constructor、copy constructor、destructor、assignment operator。</p>
+          <p class="src">Session2 - C++ Review Handout.pdf p.41</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. Destructor 有哪些特性？</summary>
+        <div class="answer">
+          <p>物件離開 scope 或被刪除時自動呼叫；名稱是 class 名加 <code>~</code>；沒有回傳型別或回傳值；不接受參數；一個 class 只有一個。</p>
+          <p class="src">Session2 - C++ Review Handout.pdf p.40</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. Dynamic binding 的優缺點？</summary>
+        <div class="answer">
+          <p>優點：理想的 data abstraction、OOP 的強大機制、廣泛用於大型軟體。缺點：效能下降，需要額外記憶體存 virtual function table，存取時有額外成本。</p>
+          <p class="src">Session2 - C++ Review Handout.pdf p.53</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Session2 - C++ Review Handout.pdf</code>　p.1–54（Yi-Shin Chen, Data Structures）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

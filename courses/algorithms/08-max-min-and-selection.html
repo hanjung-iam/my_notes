@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>找最大最小值與第 k 小 · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">找最大最小值與第 k 小</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>找最大最小值與第 k 小 (Max, Min &amp; Selection)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 08</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-08.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">下界</span>
+          <span class="tag">選擇問題</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>找最大值需要 \(n-1\) 次比較，而且這是<strong>下界</strong>：每個非最大值的數都必須輸一次，每次比較只產生一個輸家。</li>
+          <li>同時找最大與最小值：兩兩配對後，大的找 max、小的找 min，只要 \(1.5n-2\) 次比較（\(n\) 為偶數），這也是下界。</li>
+          <li>下界的證明方法：<strong>對手論證</strong>（邊執行邊決定比較結果），用紅球／藍球追蹤每個人還可能是 max 或 min。</li>
+          <li>找第 \(k\) 小：用 Quicksort 的 partition 縮小問題；隨機 pivot 的期望時間為 \(\Theta(n)\)。</li>
+          <li>用 <strong>median of medians</strong> 當 pivot，兩邊大小都 \(\le 3n/4\)，worst case 為 \(\Theta(n)\)。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="find-max">1. 找最大值 (Finding Max)</h2>
+      <pre><span class="pseudo-label">Method I</span><code>Step 1: Set max as S[1];
+Step 2: for (k = 2, 3, 4, ..., n)
+            if (S[k] > max)
+                Update max as S[k];
+Step 3: return max;</code></pre>
+      <p>比較次數 = \(n-1\)。</p>
+
+      <pre><span class="pseudo-label">Method II</span><code>Step 1: Find max of 1st half of S → Call this m1;
+Step 2: Find max of 2nd half of S → Call this m2;
+Step 3: Compare m1 and m2, return max of them;
+/** Step 1 and Step 2 are done by recursion **/</code></pre>
+      <p>令 \(T(n)\) = 用此方法找 \(n\) 個數最大值的比較次數：</p>
+      \[T(1)=0,\qquad T(n)=T(\lfloor n/2\rfloor)+T(\lceil n/2\rceil)+1 \;\Rightarrow\; T(n)=n-1\]
+      <p>（由 substitution method 求得）</p>
+
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">下界：\(n-1\) 次</span>
+          每個不是最大值的數都必須在某次比較中「輸」一次，而每次比較只會產生 1 個輸家 → 至少需要 \(n-1\) 次比較（<strong>連 best case 也是</strong>）。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-08.pdf p.3–6</p>
+
+      <!-- ===================================================== -->
+      <h2 id="max-and-min">2. 同時找最大值與最小值</h2>
+      <h3 id="maxmin-method1">Method I：分別找</h3>
+      <p>先找 max，再找 min → 比較次數 \((n-1)+(n-1)\approx 2n\)。</p>
+
+      <h3 id="maxmin-method2">Method II：兩兩配對</h3>
+      <pre><span class="pseudo-label">Method II（n 為偶數）</span><code>1. Partition numbers into pairs
+2. Compare numbers within a pair
+3. Find max among larger numbers
+4. Find min among smaller numbers</code></pre>
+      <p>比較次數 = \(n/2+(n/2-1)+(n/2-1)=1.5n-2\)。</p>
+      <pre><span class="pseudo-label">Method II（n 為奇數）</span><code>1. Ignore S[n] for the moment
+2. Find max M and min m in S[1..n–1]
+3. Compare S[n] and M to get the true max
+4. Compare S[n] and m to get the true min</code></pre>
+      <p>比較次數 = \(1.5(n-1)-2+2=1.5(n-1)\)。</p>
+      <p class="src">Algo-Lecture-08.pdf p.7–9</p>
+
+      <!-- ===================================================== -->
+      <h2 id="maxmin-lower-bound">3. 同時找 Max 與 Min 的下界</h2>
+      <p>Method II 已經是最好的：</p>
+      <ul>
+        <li>\(n\) 為偶數：至少 \(1.5n-2\) 次比較</li>
+        <li>\(n\) 為奇數：至少 \(1.5(n-1)\) 次比較</li>
+      </ul>
+
+      <h3 id="adversary">證明想法</h3>
+      <ul>
+        <li>對任何演算法 ALG，構造一個「壞」輸入，逼 ALG 做很多次比較。</li>
+        <li>一開始不設定數字的值；ALG 執行時，<strong>由我們決定每次比較的結果</strong>；ALG 停止時才把數值固定下來。</li>
+      </ul>
+
+      <p>把 \(n\) 個數想成 \(n\) 個選手，目標是找出最強和最弱的選手。每人一開始持有一顆紅球和一顆藍球：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>球</th><th>意義</th></tr></thead>
+          <tbody>
+            <tr><td>🔴 紅球</td><td>到目前為止沒輸過，仍可能是最強 (max)</td></tr>
+            <tr><td>🔵 藍球</td><td>到目前為止沒贏過，仍可能是最弱 (min)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>ALG 比較兩個選手時，依他們持有的球決定結果：</p>
+      <ol>
+        <li>兩人都有兩顆球：其中一人贏，並保留紅球。</li>
+        <li>某人只有紅球：他贏，保留紅球。</li>
+        <li>某人只有藍球：他輸，保留藍球。</li>
+        <li>某人有兩顆球、另一人沒有球：有球的人贏，保留紅球。</li>
+      </ol>
+      <p>（另一位選手依結果移除對應的球。）兩人都沒有球時，選擇勝負時要避免勝負關係形成有向環 (directed cycle)；ALG 結束時勝負關係沒有有向環，就能用 topological sort 一致地指定數值（贏的人值較大）。</p>
+
+      <h3 id="counting-balls">計算</h3>
+      <ul>
+        <li>正確的 ALG 結束時，只剩一顆紅球和一顆藍球 → 必須移除 \(2n-2\) 顆球。</li>
+        <li>只有「兩人都有兩顆球」時一次比較能移除 2 顆球，最多發生 \(n/2\) 次（\(n\) 偶數）或 \((n-1)/2\) 次（\(n\) 奇數）；其他情況最多移除 1 顆。</li>
+        <li>\(n\) 偶數：\(n/2\) 次比較最多移除 \(n\) 顆，剩下的至少要 \(n-2\) 次 → 至少 \(1.5n-2\) 次。</li>
+        <li>\(n\) 奇數：\((n-1)/2\) 次比較最多移除 \(n-1\) 顆，剩下的至少要 \(n-1\) 次 → 至少 \(1.5(n-1)\) 次。</li>
+      </ul>
+      <p class="src">Algo-Lecture-08.pdf p.10–23</p>
+
+      <!-- ===================================================== -->
+      <h2 id="selection">4. 找第 k 小的數 (Selecting kth Smallest)</h2>
+      <p>直接的方法：重複找 min、第 2 小、第 3 小…直到第 \(k\) 小 → \(O(kn)\) 次比較；\(k=O(1)\) 時好，\(k\) 大時差。能不能對任何 \(k\) 都做到 \(O(n)\)？</p>
+
+      <h3 id="select-method1">Method I：用 Quicksort 的 partition</h3>
+      <pre><span class="pseudo-label">Select Method I</span><code>1. Pick a pivot p from S[1..n]
+2. Partition S by p into S_small and S_large
+3. Count the size of S_small → Call this z
+4. if (z == k–1) return p
+   if (z ≥ k)    Find kth smallest in S_small
+   else          Find (k–z–1)th smallest in S_large</code></pre>
+      <ul>
+        <li>Worst case：\(T(n)=n+T(n-1)\Rightarrow T(n)=\Theta(n^2)\)</li>
+        <li>隨機選 pivot：有很高的機率執行時間為 \(\Theta(n)\)；期望執行時間也是 \(\Theta(n)\)</li>
+      </ul>
+
+      <h3 id="select-method2">Method II：Median of Medians</h3>
+      <p>Method I 可能很慢，因為 pivot 可能把 \(S\) 分得很不平均。花一點額外時間找一個好的 pivot，使子問題大小最多為原本的 \(3/4\)，worst case 就能是 \(O(n)\)。</p>
+      <ol>
+        <li>把 \(S\) 分成 \(\lceil n/5\rceil\) 組，每組 5 個數（可能有一組較少），各組分別排序並取出中位數。</li>
+        <li>取這些中位數的中位數 \(m\)（median of medians）。</li>
+        <li>至少 \(n/4\) 個數 \(\le m\)，也至少 \(n/4\) 個數 \(\ge m\)。</li>
+        <li>用 \(m\) 做 partition → \(|S_{small}|\le 3n/4\) 且 \(|S_{large}|\le 3n/4\)，所以 \(m\) 是好的 pivot。</li>
+      </ol>
+      <pre><span class="pseudo-label">Select Method II</span><code>1. Find median-of-medians m from S[1..n] as a pivot p
+2. Partition S by p into S_small and S_large
+3. Count the size of S_small → Call this z
+4. if (z == k–1) return p
+   if (z ≥ k)    Find kth smallest in S_small
+   else          Find (k–z–1)th smallest in S_large</code></pre>
+      <p>Step 1 用遞迴找 median of medians。令 \(T'(n)\) 為此方法的執行時間，worst case：</p>
+      \[T'(n)=\underbrace{n+T'(n/5)}_{\text{Step 1}}+\underbrace{n}_{\text{Steps 2, 3}}+\underbrace{T'(3n/4)}_{\text{Step 4}} \;\Rightarrow\; T'(n)=\Theta(n)\]
+      <p>（由 recursion tree 求得）</p>
+      <p class="src">Algo-Lecture-08.pdf p.24–33</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 為什麼找最大值至少需要 \(n-1\) 次比較？</summary>
+        <div class="answer">
+          <p>每個非最大值的數都必須在某次比較中輸一次，而每次比較只產生 1 個輸家。</p>
+          <p class="src">Algo-Lecture-08.pdf p.6</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. \(n\) 為偶數時，同時找 max 和 min 最少需要幾次比較？用什麼方法達成？</summary>
+        <div class="answer">
+          <p>\(1.5n-2\) 次。兩兩配對比較，再在較大的數中找 max、較小的數中找 min。</p>
+          <p class="src">Algo-Lecture-08.pdf p.8, p.10</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 下界證明中，為什麼要移除 \(2n-2\) 顆球？</summary>
+        <div class="answer">
+          <p>一開始共 \(2n\) 顆球；正確的演算法結束時，只能剩下一顆紅球（max）和一顆藍球（min）。</p>
+          <p class="src">Algo-Lecture-08.pdf p.22</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 用 median of medians 當 pivot，partition 後兩邊最多多大？</summary>
+        <div class="answer">
+          <p>\(|S_{small}|\le 3n/4\) 且 \(|S_{large}|\le 3n/4\)。</p>
+          <p class="src">Algo-Lecture-08.pdf p.31</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. Selection Method II 的遞迴式是什麼？解是多少？</summary>
+        <div class="answer">
+          <p>\(T'(n)=n+T'(n/5)+n+T'(3n/4)\)，\(T'(n)=\Theta(n)\)。</p>
+          <p class="src">Algo-Lecture-08.pdf p.33</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-08.pdf</code>　p.1–33（CS 4311 Introduction to Algorithms, Lecture 08）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

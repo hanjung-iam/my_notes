@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>平衡搜尋樹：AVL、B-tree、B+-tree · 資料結構</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="data-structures" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">資料結構</a>
+      <span class="sep">/</span>
+      <span class="current">平衡搜尋樹：AVL、B-tree、B+-tree</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>平衡搜尋樹：AVL、B-tree、B+-tree (Balanced Search Trees)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>資料結構</dd>
+          <dt>單元</dt><dd>Session 10</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Session10 - Advanced Topics_240529_093517.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">樹</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>BST 的操作都是 \(O(h)\)，\(h\) 可能高達 \(n\)；用 AVL tree、B-tree、B+-tree 保持平衡。</li>
+          <li><strong>AVL tree</strong>：每個節點 \(|bf|\le 1\)，\(bf=\text{height}(T_L)-\text{height}(T_R)\)；失衡時用旋轉修正。</li>
+          <li>四種失衡：outside cases <strong>LL、RR</strong> 用單次旋轉；inside cases <strong>LR、RL</strong> 需要兩次旋轉。</li>
+          <li><strong>B-tree</strong>（order \(m\)）：所有 leaf 在同一層，每個節點最多 \(m\) 個 children；溢位時分裂並把中間 key 往上推。</li>
+          <li><strong>B+-tree</strong>：資料指標只在 leaf，leaf 串成 linked list（sequence set）；層數可以比 B-tree 少。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="motivation">1. 為什麼需要平衡</h2>
+      <ul>
+        <li>BST 的所有操作都是 \(O(h)\)，\(h\) = BST 的高度。</li>
+        <li>Worst case \(h=n\)（依序插入 1, 2, …, \(n\)）；Best case \(h=\log n\)（插入 4, 2, 6, 1, 3, 5, 7）。</li>
+        <li>保持 BST 平衡的方法：AVL Trees、B Trees（multiway search trees）、B+ Trees。</li>
+      </ul>
+      <p class="src">Session10 - Advanced Topics_240529_093517.pdf p.2–3</p>
+
+      <!-- ===================================================== -->
+      <h2 id="avl">2. AVL Trees</h2>
+      <h3 id="height-balanced">Height Balanced</h3>
+      <ul>
+        <li>空樹是 height balanced。</li>
+        <li>非空 binary tree \(T\)，左右子樹為 \(T_L\)、\(T_R\)，<strong>balance factor</strong>：
+          \[bf(T)=\text{height}(T_L)-\text{height}(T_R)\]
+        </li>
+        <li>\(T\) 是 height balanced iff (1) \(T_L\) 與 \(T_R\) 都是 height balanced，且 (2) \(|bf(T)|\le 1\)。</li>
+      </ul>
+      <p><strong>AVL tree</strong> 是 height-balanced 的 binary search tree；每個節點存目前的高度，用來計算 balance factor。</p>
+
+      <h3 id="rebalancing">Rebalancing</h3>
+      <p>在 BST 插入 / 刪除時，若 balance factor &gt; 1 或 &lt; −1，就啟動 rebalance，用<strong>旋轉 (rotation)</strong> 修正。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>情況</th><th>新節點插入在 A 的…</th><th>修正方式</th></tr></thead>
+          <tbody>
+            <tr><td>LL（outside）</td><td>左子樹的左子樹</td><td>Right rotation（單次）</td></tr>
+            <tr><td>RR（outside）</td><td>右子樹的右子樹</td><td>Left rotation（單次）</td></tr>
+            <tr><td>LR（inside）</td><td>左子樹的右子樹</td><td>Left rotation + Right rotation</td></tr>
+            <tr><td>RL（inside）</td><td>右子樹的左子樹</td><td>Right rotation + Left rotation</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">易錯：inside case 只轉一次會失敗</span>
+          例：4 → 8 → 6 這種 inside case，只做一次 left 或 right rotation 仍然不平衡（講義稱為 wrong concept）。要先對選定區域做一次旋轉，再對整體做反方向的旋轉。
+        </div>
+      </div>
+      <pre><span class="pseudo-label">AVLTree::rebalance（C++）</span><code>template &lt; class T &gt;
+TreeNode&lt;T&gt;* AVLTree&lt;T&gt;::rebalance(TreeNode&lt;T&gt; *node){
+    // LL Rotation
+    if ( node->bf()>1 &amp;&amp; node->left->bf()>=0 ){
+        return rightRotate( node );
+    }
+    // RR Rotation
+    if ( node->bf()&lt;-1 &amp;&amp; node->right->bf()&lt;=0 ){
+        return leftRotate( node );
+    }
+    // LR Rotation
+    if ( node->bf()>1 &amp;&amp; node->left->bf()&lt;0 ){
+        node->left = leftRotate( node->left );
+        return rightRotate( node );
+    }
+    // RL Rotation
+    if ( node->bf()&lt;-1 &amp;&amp; node->right->bf()>0 ){
+        node->right = rightRotate( node->right );
+        return leftRotate( node );
+    }
+}</code></pre>
+      <pre><span class="pseudo-label">leftRotate（C++，rightRotate 左右對稱）</span><code>template &lt; class T &gt;
+TreeNode&lt;T&gt;* AVLTree&lt;T&gt;::leftRotate(TreeNode&lt;T&gt; *node)
+{
+    TreeNode&lt;T&gt;* node_r = node->right;
+    TreeNode&lt;T&gt;* node_rl = node_r->left;
+    node_r->left = node;
+    node->right = node_rl;
+    node->UpdateHeight();
+    node_r->UpdateHeight();
+    return node_r;
+}</code></pre>
+      <p>Insert / Delete：先做一般的 BST insert / delete，再從該節點往 root 更新高度並 rebalance。</p>
+      <p class="src">Session10 - Advanced Topics_240529_093517.pdf p.4–19</p>
+
+      <!-- ===================================================== -->
+      <h2 id="b-tree">3. B-Tree</h2>
+      <p>Order 為 \(m\) 的 B-tree 是 height-balanced 的樹，每個節點最多 \(m\) 個 children，且：</p>
+      <ol>
+        <li>所有 leaf 都在同一層</li>
+        <li>沒有節點超過 \(m\) 個 children</li>
+        <li>除了 root 以外，所有節點至少有 \(\lceil m/2\rceil-1\) 個 keys</li>
+        <li>root 要嘛是 leaf，要嘛有 2 到 \(m\) 個 children</li>
+      </ol>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          第 3 點的最少 key 數在 PDF 中是公式圖形，只能讀出「m/2 −1」，是否為上取整 \(\lceil m/2\rceil-1\) 請對照講義確認。講義範例 \(m=4\) 時每個節點的 key 數為 1~3。
+        </div>
+      </div>
+
+      <h3 id="b-tree-insert">Insert</h3>
+      <ol>
+        <li>搜尋，把新 key 插入 leaf。</li>
+        <li>若 leaf 溢位：把 leaf 分成兩個，並把<strong>中間的 key 往上推</strong>到 parent。</li>
+        <li>若 parent 也溢位：同樣分裂並往上推，可能一路重複到 root。</li>
+        <li>必要時 root 也分裂，中間 key 推到新的 root，樹高增加一層。</li>
+      </ol>
+
+      <h3 id="b-tree-delete">Delete</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>情況</th><th>處理方式</th></tr></thead>
+          <tbody>
+            <tr><td>刪除的是 leaf 中的 key</td><td>刪除後若 key 數仍合法就完成；若 underflow：sibling 的 key 夠多就 <strong>redistribute</strong>（向 sibling 借），否則 <strong>merge</strong> 成一個節點，再檢查 parent 是否 underflow</td></tr>
+            <tr><td>刪除的是 non-leaf 中的 key</td><td>與 logic next key（右子樹最左 leaf 的第一個 key）交換，再刪除 leaf 中的 key；也可以改用 logic previous key（左子樹最右 leaf 的最後一個 key）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>講義例：刪除 41 造成 underflow，且無法 redistribute → Case 3 merge。</p>
+      <p class="src">Session10 - Advanced Topics_240529_093517.pdf p.21–28</p>
+
+      <!-- ===================================================== -->
+      <h2 id="b-plus-tree">4. B+-Tree</h2>
+      <p>B-tree 的變形，有兩種節點：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>節點</th><th>內容</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td>Index (non-leaf) nodes</td><td>只存 keys</td><td>引導搜尋到 leaf 中的記錄（direct search）</td></tr>
+            <tr><td>Data (leaf) nodes</td><td>存資料記錄（實際資料或資料指標），並串成 linked list（sequence set）</td><td>循序存取（sequential retrieval）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>Insert 的流程與 B-tree 相同（搜尋 → 插入 leaf → 溢位就分裂 → 檢查 parent）。講義例：\(m=5\) 時插入 8* 造成分裂。</li>
+        <li>Delete：underflow 時 redistribute 或 merge。在 leaf（data entries）層 merge 時，<strong>parent 的 key 會被丟掉</strong>，這點和 B-tree 不同（講義例：刪除 24）。</li>
+      </ul>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>B-tree</th><th>B+-tree</th></tr></thead>
+          <tbody>
+            <tr><td>指向資料記錄的指標</td><td>存在樹的<strong>每一層</strong></td><td>只存在 <strong>leaf 層</strong></td></tr>
+            <tr><td>層數</td><td>—</td><td>可以比對應的 B-tree 少（或能容納更多搜尋值）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Session10 - Advanced Topics_240529_093517.pdf p.30–35</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. AVL tree 的 balance factor 怎麼算？什麼情況要 rebalance？</summary>
+        <div class="answer">
+          <p>\(bf(T)=\text{height}(T_L)-\text{height}(T_R)\)；balance factor &gt; 1 或 &lt; −1 時要 rebalance。</p>
+          <p class="src">Session10 - Advanced Topics_240529_093517.pdf p.4, p.7</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. LR 情況是什麼？要怎麼旋轉？</summary>
+        <div class="answer">
+          <p>新節點插在 A 的左子樹的右子樹；先對左子樹做 left rotation，再對 A 做 right rotation。</p>
+          <p class="src">Session10 - Advanced Topics_240529_093517.pdf p.14, p.18</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. B-tree 插入時 leaf 溢位要怎麼處理？</summary>
+        <div class="answer">
+          <p>把 leaf 分成兩個，中間的 key 往上推到 parent；若 parent 也溢位就重複，必要時 root 分裂，樹高加一。</p>
+          <p class="src">Session10 - Advanced Topics_240529_093517.pdf p.23</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. B-tree 刪除 non-leaf 的 key 時怎麼做？</summary>
+        <div class="answer">
+          <p>先與 logic next key（右子樹最左 leaf 的第一個 key）或 logic previous key 交換，再當成刪除 leaf 的 key 處理。</p>
+          <p class="src">Session10 - Advanced Topics_240529_093517.pdf p.28</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. B-tree 與 B+-tree 最主要的差別？</summary>
+        <div class="answer">
+          <p>B-tree 每一層都有指向資料記錄的指標；B+-tree 只有 leaf 層有，且 leaf 串成 linked list，層數可以比 B-tree 少。</p>
+          <p class="src">Session10 - Advanced Topics_240529_093517.pdf p.30, p.35</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Session10 - Advanced Topics_240529_093517.pdf</code>　p.1–35（Yi-Shin Chen, Data Structures）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

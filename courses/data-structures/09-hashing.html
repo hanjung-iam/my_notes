@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>雜湊 (Hashing) · 資料結構</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="data-structures" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">資料結構</a>
+      <span class="sep">/</span>
+      <span class="current">雜湊 (Hashing)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>雜湊 (Hashing)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>資料結構</dd>
+          <dt>單元</dt><dd>Session 9</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Session9 - Hashing_240520_110816.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">雜湊</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>平衡搜尋樹的 Get / Insert / Delete 為 \(O(\log n)\)；<strong>Hashing</strong> 可以做到 \(O(1)\)。</li>
+          <li>Hash table 有 \(b\) 個 bucket、每個 bucket \(s\) 個 slot；loading factor \(\alpha=n/(s\times b)\)。</li>
+          <li><strong>Collision</strong>：key 對應到非空的 home bucket；<strong>Overflow</strong>：對應到已滿的 home bucket。好的 hash function 要容易計算、碰撞少。</li>
+          <li>常見 hash function：Division、Mid-Square、Folding、Digit Analysis。</li>
+          <li><strong>Dynamic (Extendable) Hashing</strong> 用 directory，只分裂溢位的 bucket；<strong>Linear Hashing</strong> 依線性順序輪流分裂 bucket。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="indexing">1. 為什麼需要 Hashing</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Indexing 方法</th><th>Get / Insert / Delete</th></tr></thead>
+          <tbody>
+            <tr><td>Balanced (binary) search tree</td><td>\(O(\log n)\)</td></tr>
+            <tr><td>Hashing（static / dynamic）</td><td>\(O(1)\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Session9 - Hashing_240520_110816.pdf p.2–3</p>
+
+      <!-- ===================================================== -->
+      <h2 id="static-hashing">2. Static Hashing</h2>
+      <ul>
+        <li>檔案區塊分成 \(M\) 個大小相同的 bucket；hash key 為 \(K\) 的記錄存在 bucket \(i=h(K)\)，\(h\) 為 hash function。</li>
+        <li><strong>Hash table (ht)</strong>：存放 dictionary pairs 的容器，分成 \(b\) 個 bucket ht[0], …, ht[\(b-1\)]；每個 bucket 有 \(s\) 個 slot，通常 \(s=1\)。</li>
+        <li><strong>Hash function</strong> \(h(k)\)：把 key 對應到 0 到 \(b-1\) 之間的整數（bucket）。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>名詞</th><th>定義</th></tr></thead>
+          <tbody>
+            <tr><td>Key density</td><td>\(n/T\)：\(n\) 為表中 pair 數，\(T\) 為所有可能 key 的總數</td></tr>
+            <tr><td>Loading density / loading factor</td><td>\(\alpha=n/(s\times b)\)</td></tr>
+            <tr><td>Synonyms</td><td>\(h(k_1)=h(k_2)\) 的兩個 key</td></tr>
+            <tr><td>Collision</td><td>key 被對應到<strong>非空</strong>的 home bucket</td></tr>
+            <tr><td>Overflow</td><td>key 被對應到<strong>已滿</strong>的 home bucket</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">重點</span>
+          <ul>
+            <li>每個 bucket 只有 1 個 slot 時，collision 與 overflow 會同時發生。</li>
+            <li>新記錄對應到已滿的 bucket 時，存到 overflow file；同一 bucket 的 overflow 記錄可以串在一起（overflow pages）。</li>
+            <li>Slot 數少時，search、insert、delete 都可以在 \(O(1)\) 完成。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">易錯：用開頭字母當 hash function 不好</span>
+          key 可能偏向某些 bucket。好的 hash function 要<strong>容易計算</strong>、<strong>碰撞少</strong>。
+        </div>
+      </div>
+      <p class="src">Session9 - Hashing_240520_110816.pdf p.5–11</p>
+
+      <!-- ===================================================== -->
+      <h2 id="hash-functions">3. Hash Functions</h2>
+      <p><strong>Uniform hash function</strong>：對隨機 key 不會偏向使用 hash table 的某部分；隨機選一個 key \(k\)，對所有 bucket \(i\)，\(P(h(k)=i)=1/b\)。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>方法</th><th>做法</th><th>注意</th></tr></thead>
+          <tbody>
+            <tr><td>Division</td><td>\(h(k)=k\ \%\ D\)，key 為非負整數</td><td>bucket 位址 0 到 \(D-1\)，所以至少要 \(b=D\) 個 bucket；\(D\) 用質數</td></tr>
+            <tr><td>Mid-Square</td><td>把 key 平方，取中間適當數量的 bits 當 bucket 位址</td><td>用 \(r\) bits 時表格大小為 \(2^r\)；例：64（\(2^6\)）個 bucket 取中間 6 bits</td></tr>
+            <tr><td>Folding</td><td>把 key 切成數段，各段相加得到位址</td><td>—</td></tr>
+            <tr><td>Digit Analysis</td><td>事先知道表中所有 key；刪掉分布最偏的幾位數，用剩下的位數</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Session9 - Hashing_240520_110816.pdf p.12–16</p>
+
+      <!-- ===================================================== -->
+      <h2 id="dynamic-hashing">4. Dynamic Hashing（Extendable Hashing）</h2>
+      <p>處理 overflow 的方法：加 overflow pages、把 bucket 大小加倍、把 bucket 數加倍並重組…</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">想法</span>
+          bucket 滿了時，與其把整個檔案的 bucket 數加倍，不如使用一個<strong>指向 bucket 的 directory</strong>：把 directory 加倍（directory 比檔案小得多，加倍便宜），並<strong>只分裂溢位的那個 bucket</strong>，不需要 overflow page。
+        </div>
+      </div>
+      <ul>
+        <li>用 hash 值 \(h(K)\) 的二進位表示來存取 directory。</li>
+        <li><strong>Directory</strong>：大小為 \(2^d\) 的陣列，\(d\) 稱為 <strong>global depth</strong>；可以存在磁碟上，動態擴大或縮小；entry 指向存放記錄的磁碟 block。</li>
+        <li>插入到已滿的 block 時，block 分裂成兩個，記錄重新分配到兩個 block，directory 也跟著更新。</li>
+        <li>Global depth = 所有 bucket 的 local depth 中的最大值，代表決定位址需要幾個 bits。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子（global depth = 2，看最後 2 bits）</span>
+          <ul>
+            <li>Buckets：00 → {4, 12, 32, 16}、01 → {1, 5, 21}、10 → {10}、11 → {15, 7, 19}</li>
+            <li>找 5（101）→ 最後兩位 01 → 第二個 bucket</li>
+            <li><strong>Insert 13</strong>（1101）→ 01 bucket 還有空間，直接放入</li>
+            <li><strong>Insert 20</strong>（10100）→ 00 bucket 已滿，需要分裂；改看最後 3 bits：000 → {32, 16}、100 → {4, 12, 20}，directory 加倍為 000–111，global depth 變成 3</li>
+          </ul>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Local / Global depth 規則</th></tr></thead>
+          <tbody>
+            <tr><td>一開始所有 local depth 都等於 global depth（表示 bucket 總數所需的 bits 數）</td></tr>
+            <tr><td>分裂時，若該 bucket 的 local depth = global depth，directory 必須加倍</td></tr>
+            <tr><td>Directory 加倍時 global depth + 1；bucket 分裂時 local depth + 1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Session9 - Hashing_240520_110816.pdf p.18–27</p>
+
+      <!-- ===================================================== -->
+      <h2 id="linear-hashing">5. Linear Hashing</h2>
+      <ul>
+        <li>需要 overflow 區域；block 依<strong>線性順序</strong>分裂，以 round-robin 方式輪流，最終所有 bucket 都會被分裂。</li>
+        <li>使用一族 hash functions \(h_0,h_1,h_2,\dots\)：
+          \[h_i(\text{key})=h(\text{key})\bmod (2^iN),\quad N=\text{初始 bucket 數}\]
+        </li>
+        <li>若 \(N=2^{d_0}\)，則 \(h_i\) 看最後 \(d_i\) 個 bits，\(d_i=d_0+i\)；\(h_{i+1}\) 的範圍是 \(h_i\) 的兩倍。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子（Level 0，Next = 0）</span>
+          <ul>
+            <li><strong>Insert 43</strong>（101011）→ \(h_0\) 對應到 11 bucket，已滿 → 43 放進 overflow page，並<strong>分裂 Next 指向的 bucket</strong>（00）：用 \(h_1\) 看最後 3 bits，32（100000）留在 000，44（101100）、36（100100）移到新的 100 bucket；Next 變成 1。</li>
+            <li><strong>Insert 29</strong>（11101）→ 對應的 bucket 溢位，放入 overflow page。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">與 Dynamic Hashing 的差別</span>
+          Linear hashing 分裂的不一定是溢位的 bucket，而是 <strong>Next</strong> 指到的 bucket；溢位的記錄先放在 overflow page。
+        </div>
+      </div>
+      <p class="src">Session9 - Hashing_240520_110816.pdf p.29–32</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. Collision 和 overflow 有什麼不同？什麼時候會同時發生？</summary>
+        <div class="answer">
+          <p>Collision 是 key 對應到非空的 home bucket；overflow 是對應到已滿的 home bucket。每個 bucket 只有 1 個 slot 時兩者同時發生。</p>
+          <p class="src">Session9 - Hashing_240520_110816.pdf p.9</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Loading factor 怎麼算？</summary>
+        <div class="answer">
+          <p>\(\alpha=n/(s\times b)\)，\(n\) 為 pair 數、\(s\) 為每個 bucket 的 slot 數、\(b\) 為 bucket 數。</p>
+          <p class="src">Session9 - Hashing_240520_110816.pdf p.8</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 使用 division hash function 時，\(D\) 要怎麼選？table 至少要多大？</summary>
+        <div class="answer">
+          <p>\(D\) 用質數；bucket 位址範圍是 0 到 \(D-1\)，所以 table 至少要有 \(b=D\) 個 bucket。</p>
+          <p class="src">Session9 - Hashing_240520_110816.pdf p.13</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. Dynamic hashing 中，什麼時候 directory 要加倍？</summary>
+        <div class="answer">
+          <p>分裂 bucket 時，若該 bucket 的 local depth 等於 global depth，directory 必須加倍，global depth + 1。</p>
+          <p class="src">Session9 - Hashing_240520_110816.pdf p.27</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. Linear hashing 的 \(h_i\) 怎麼定義？</summary>
+        <div class="answer">
+          <p>\(h_i(\text{key})=h(\text{key})\bmod(2^iN)\)，\(N\) 為初始 bucket 數；\(h_{i+1}\) 的範圍是 \(h_i\) 的兩倍。</p>
+          <p class="src">Session9 - Hashing_240520_110816.pdf p.29</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Session9 - Hashing_240520_110816.pdf</code>　p.1–32（Yi-Shin Chen, Data Structures）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

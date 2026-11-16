@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>動態陣列 (Dynamic Array) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">動態陣列 (Dynamic Array)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>動態陣列 (Dynamic Array)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 16</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-16.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">攤銷分析</span>
+          <span class="tag">資料結構</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>Dynamic array</strong>：大小可以變動的陣列，同時保有 \(O(1)\) 的隨機存取。</li>
+          <li>只有 Insert：陣列滿了就開一個<strong>兩倍大</strong>的新陣列並搬過去 → 陣列至少半滿，Insert 的攤銷成本 \(O(1)\)。</li>
+          <li>Accounting method：Insert 收 $3（$1 付實際成本，$2 存在剛插入的項目上），搬移時剛好付得起。</li>
+          <li>加入 Delete：陣列只剩 <strong>25% 滿</strong>時，縮成一半大小 → 陣列至少 25% 滿；Insert 收 $3、Delete 收 $2 即可。</li>
+          <li>這個問題用 Accounting method 分析最直觀。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="motivation">1. 為什麼需要 Dynamic Array</h2>
+      <ul>
+        <li>陣列簡單又有效率，支援 \(O(1)\) 時間的隨機存取。</li>
+        <li>有時希望陣列大小可以變動，讓項目隨時間插入或刪除（例：用陣列實作 binary heap）→ 稱為 <strong>dynamic array</strong>。</li>
+        <li>一開始配置太多空間，項目不多時會浪費；先配置固定大小，不夠時再搬到更大的陣列 → 空間使用較好，但需要搬移項目。</li>
+        <li>問題：能不能空間使用好，又不需要常常搬移項目？</li>
+      </ul>
+      <p class="src">Algo-Lecture-16.pdf p.3–5</p>
+
+      <!-- ===================================================== -->
+      <h2 id="insert-only">2. 只處理 Insert</h2>
+      <pre><span class="pseudo-label">Relocate Scheme（Insert only）</span><code>1. Let k be the current array size
+2. If the array becomes full after Insert, create a new array
+   with size 2k, and relocate all items to new array</code></pre>
+
+      <h3 id="insert-space">空間使用</h3>
+      <p>假設一開始配置固定大小（例如 100）。除非項目數 &lt; 100，否則陣列<strong>至少半滿</strong> → 最多浪費常數空間或陣列一半的空間 → 空間使用良好。</p>
+
+      <h3 id="insert-aggregate">攤銷成本：Aggregate Method</h3>
+      <ul>
+        <li>\(n\) 次 Insert 的總成本 = \(n\) + 項目被搬移的次數</li>
+        <li>第 100 次操作搬 100 個、第 200 次搬 200 個、第 400 次搬 400 個…</li>
+        <li>→ 項目被搬移的次數 \(\le 2n\) → Insert 的攤銷成本 = \(O(1)\)</li>
+      </ul>
+
+      <h3 id="insert-accounting">攤銷成本：Accounting Method</h3>
+      <p>設 Insert 的攤銷成本 = <strong>$3</strong>：</p>
+      <ul>
+        <li>Insert 後陣列沒滿 → 不用搬移；$1 支付實際成本，$2 存起來，綁在剛插入的項目上 → 上次搬移之後插入的每個項目都有 $2。</li>
+        <li>Insert 後陣列滿了（目前大小為 \(k\)）→ 上次搬移後插入了 \(k/2\) 個項目 → 存款 \(\ge 2\cdot(k/2)=k\) → 足夠支付搬移；搬移後存款全部用完。</li>
+      </ul>
+      <p class="src">Algo-Lecture-16.pdf p.5–9</p>
+
+      <!-- ===================================================== -->
+      <h2 id="insert-delete">3. 同時處理 Insert 與 Delete</h2>
+      <pre><span class="pseudo-label">Relocate Scheme（Insert and Delete）</span><code>1. Let k be the current array size
+2. If the array becomes full after Insert, create a new array
+   with size 2k, and relocate all items to new array
+3. If the array becomes 25% full after Delete, create a new array
+   with size k/2 and relocate all items to new array</code></pre>
+
+      <h3 id="id-space">空間使用</h3>
+      <p>一開始配置固定大小（例如 100）。除非項目數 &lt; 100，否則陣列<strong>至少 25% 滿</strong> → 最多浪費常數空間或陣列 75% 的空間 → 空間使用還不錯。</p>
+
+      <h3 id="id-accounting">攤銷成本：Accounting Method</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>操作</th><th>攤銷成本</th><th>不需搬移時</th><th>需要搬移時（目前大小 \(k\)）</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Insert</td>
+              <td>$3</td>
+              <td>$1 付實際成本，$2 存起來</td>
+              <td>上次搬移後至少插入了 \(k/2\) 個項目 → 足夠支付搬移</td>
+            </tr>
+            <tr>
+              <td>Delete</td>
+              <td>$2</td>
+              <td>$1 付實際成本，$1 存起來</td>
+              <td>陣列剩 25% 滿時，上次搬移後至少刪除了 \(k/4\) 個項目 → 足夠支付搬移</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Algo-Lecture-16.pdf p.10–13</p>
+
+      <!-- ===================================================== -->
+      <h2 id="remarks">4. 其他分析方法</h2>
+      <ul>
+        <li><strong>Aggregate Method</strong> 也可以用，但論證會比較亂。</li>
+        <li><strong>Potential Method</strong> 也可以，令 \(k\) 為目前陣列大小：
+          \[\Phi=\begin{cases}
+          2\cdot(\#\text{items}-k/2) &amp; \text{if array is more than half full} \\
+          k/2-\#\text{items} &amp; \text{if array is at most half full}
+          \end{cases}\]
+        </li>
+        <li>在這個問題中，<strong>Accounting Method 最直觀</strong>。</li>
+      </ul>
+      <p class="src">Algo-Lecture-16.pdf p.14</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 只有 Insert 時，陣列滿了要怎麼處理？空間使用如何？</summary>
+        <div class="answer">
+          <p>開一個兩倍大的新陣列，把所有項目搬過去。除非項目數少於初始大小，否則陣列至少半滿。</p>
+          <p class="src">Algo-Lecture-16.pdf p.5–6</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 用 aggregate method 說明 Insert 的攤銷成本為什麼是 \(O(1)\)。</summary>
+        <div class="answer">
+          <p>\(n\) 次 Insert 的總成本 = \(n\) + 搬移次數；搬移發生在第 100、200、400… 次，總搬移次數 \(\le 2n\)，所以平均每次 \(O(1)\)。</p>
+          <p class="src">Algo-Lecture-16.pdf p.7</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. Accounting method 中 Insert 收 $3，陣列滿（大小 \(k\)）時為什麼付得起搬移？</summary>
+        <div class="answer">
+          <p>上次搬移後插入了 \(k/2\) 個項目，每個存了 $2，共 \(\ge k\)，足夠支付搬移 \(k\) 個項目。</p>
+          <p class="src">Algo-Lecture-16.pdf p.9</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 加入 Delete 後，什麼時候縮小陣列？Delete 的攤銷成本設多少？</summary>
+        <div class="answer">
+          <p>Delete 後陣列只剩 25% 滿時，開一個大小 \(k/2\) 的新陣列並搬過去。Delete 的攤銷成本設為 $2。</p>
+          <p class="src">Algo-Lecture-16.pdf p.10, p.13</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-16.pdf</code>　p.1–14（CS 4311 Introduction to Algorithms, Lecture 16）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

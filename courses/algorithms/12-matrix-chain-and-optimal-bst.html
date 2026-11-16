@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>矩陣鏈乘法與最佳二元搜尋樹 · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">矩陣鏈乘法與最佳二元搜尋樹</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>矩陣鏈乘法與最佳二元搜尋樹 (Matrix Chain &amp; Optimal BST)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 12</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-12.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">動態規劃</span>
+          <span class="tag">樹</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>兩個矩陣 \(r_A\times c_A\) 與 \(r_B\times c_B\)（\(c_A=r_B\)）相乘需要 \(O(r_Ac_Ac_B)\) 次運算。</li>
+          <li>矩陣乘法有結合律：改變相乘順序結果相同，但運算量可能差很多（例：20000 vs 200）。</li>
+          <li>Matrix chain：\(\text{Best}(i,j)=\min_{i\le k&lt;j}\{\text{Best}(i,k)+\text{Best}(k+1,j)+r_ic_kc_j\}\)，總時間 \(O(n^3)\)。</li>
+          <li>Optimal BST：讓被搜尋頻率高的項目靠近根，目標是最小化 \(\sum f_jl_j\)。</li>
+          <li>兩個問題都是<strong>倒著想</strong>：最後一次乘法在哪裡切開？哪一個項目當根？</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="matrix-mult">1. 矩陣乘法的運算量</h2>
+      <ul>
+        <li>\(A\) 的維度 \(r_A\times c_A\)、\(B\) 的維度 \(r_B\times c_B\)。若 \(c_A=r_B\)，可以得到 \(AB\)，維度為 \(r_A\times c_B\)。</li>
+        <li>\(AB\) 的每個 entry 需要 \(O(c_A)\) 次運算（例：\(2\cdot 1+5\cdot(-1)+1\cdot 2\)），所以總運算量為 \(O(r_Ac_Ac_B)\)。</li>
+      </ul>
+
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：A 為 100×1、B 為 1×100、C 為 100×1</span>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>順序</th><th>運算量</th></tr></thead>
+              <tbody>
+                <tr><td>\((AB)C\)</td><td>\(100\cdot1\cdot100+100\cdot100\cdot1=20000\)</td></tr>
+                <tr><td>\(A(BC)\)</td><td>\(1\cdot100\cdot1+100\cdot1\cdot1=200\)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          矩陣乘法有<strong>結合律 (associative)</strong>，重新安排相乘順序可以得到相同的正確結果，但快很多！
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-12.pdf p.3–6</p>
+
+      <!-- ===================================================== -->
+      <h2 id="matrix-chain">2. 矩陣鏈乘法 (Matrix Chain Multiplication)</h2>
+      <p>輸入 \(n\) 個矩陣 \(A_1,A_2,\dots,A_n\)，\(A_j\) 的維度為 \(r_j\times c_j\)，且相鄰維度相符。要計算 \(A_1A_2\cdots A_n\)，如何找出運算量最少的相乘順序？</p>
+
+      <h3 id="mc-backward">倒著想</h3>
+      <p>要決定<strong>最後一次</strong>乘法需要知道什麼？最後一次乘法可能是把 \((A_1A_2\cdots A_k)\) 和 \((A_{k+1}A_{k+2}\cdots A_n)\) 的結果相乘（\(k\) 可以是任何值），所以最好能存下得到這兩部分的最少運算量。</p>
+
+      <h3 id="mc-recurrence">遞迴式</h3>
+      <p>令 \(\text{Best}(i,j)\) = 計算 \(A_iA_{i+1}\cdots A_j\) 的最少運算量：</p>
+      \[\begin{aligned}
+      \text{Best}(i,i) &amp;= 0 \\
+      \text{Best}(i,j) &amp;= \min_{i\le k&lt;j}\ \{\text{Best}(i,k)+\text{Best}(k+1,j)+r_ic_kc_j\}
+      \end{aligned}\]
+
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">執行時間</span>
+          <ul>
+            <li>Best 表有 \(O(n^2)\) 個 entries 要算</li>
+            <li>每個 entry 要考慮 \(O(n)\) 種 \(k\) → 每個 \(O(n)\) 時間</li>
+            <li>總時間 \(O(n^3)\)</li>
+          </ul>
+          最少運算量就是 \(\text{Best}(1,n)\)；最佳的相乘順序可以用標準的 backtracking 取回。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-12.pdf p.7–10</p>
+
+      <!-- ===================================================== -->
+      <h2 id="optimal-bst">3. 最佳二元搜尋樹 (Optimal Binary Search Tree)</h2>
+      <h3 id="bst-def">Binary Search Tree</h3>
+      <p>令 \(S\) 為 \(n\) 個有順序的項目。\(S\) 的 binary search tree (BST) 是一棵二元樹 \(T\)，滿足：</p>
+      <ol>
+        <li>\(T\) 有 \(n\) 個節點，每個節點存 \(S\) 的一個項目</li>
+        <li>對任何節點 \(v\)，左子樹的項目都比 \(v\) 小，右子樹的項目都比 \(v\) 大</li>
+      </ol>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子</span>
+          6 個單字（依字典序）：apple、banana、burger、hotdog、pizza、spaghetti。可以建成一棵平衡的 BST；但若知道每個字被搜尋的機率，讓<strong>較常被搜尋的字靠近根</strong>，得到的另一棵 BST 會有更好的<strong>期望</strong>表現。
+        </div>
+      </div>
+
+      <h3 id="bst-goal">目標</h3>
+      <ul>
+        <li>在 \(T\) 中搜尋 \(x\) 的比較次數 = 從根到存放 \(x\) 的節點路徑上的節點數。</li>
+        <li>通常看 worst case，為 \(\Omega(\log n)\)；這裡改看「期望」情況。</li>
+        <li>對 \(S\) 中每個項目 \(x_j\)：\(f_j\) = \(x_j\) 被搜尋的頻率；\(l_j\) = \(x_j\) 在 \(T\) 中的 level（根為 level 1，根的子節點為 level 2，…）。</li>
+      </ul>
+      \[\text{minimize}\quad f_1l_1+f_2l_2+f_3l_3+\cdots+f_nl_n\]
+      <p>這個值等於：用 \(T\) 存放 \(S\) 時，全部 \(f_1+f_2+\cdots+f_n\) 次搜尋的比較次數總和。</p>
+
+      <h3 id="bst-backward">倒著想</h3>
+      <p>要決定哪個項目最適合放在根，需要知道什麼？</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Hint（講義）</span>
+          若 \(x_k\) 是根的最佳選擇，就需要一棵處理 \(x_1,x_2,\dots,x_{k-1}\) 的最佳 BST，以及一棵處理 \(x_{k+1},x_{k+2},\dots,x_n\) 的最佳 BST。
+        </div>
+      </div>
+      <p>（講義至此結束，沒有給出完整的遞迴式。）</p>
+      <p class="src">Algo-Lecture-12.pdf p.11–17</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. \(r_A\times c_A\) 與 \(r_B\times c_B\) 的矩陣相乘需要多少運算？</summary>
+        <div class="answer">
+          <p>需要 \(c_A=r_B\)，運算量 \(O(r_Ac_Ac_B)\)。</p>
+          <p class="src">Algo-Lecture-12.pdf p.3</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. A(100×1)、B(1×100)、C(100×1)，(AB)C 和 A(BC) 各需要多少運算？</summary>
+        <div class="answer">
+          <p>(AB)C：20000；A(BC)：200。</p>
+          <p class="src">Algo-Lecture-12.pdf p.5–6</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 寫出 Matrix chain 的 Best(i, j) 遞迴式，以及總時間。</summary>
+        <div class="answer">
+          <p>\(\text{Best}(i,i)=0\)；\(\text{Best}(i,j)=\min_{i\le k&lt;j}\{\text{Best}(i,k)+\text{Best}(k+1,j)+r_ic_kc_j\}\)。總時間 \(O(n^3)\)。</p>
+          <p class="src">Algo-Lecture-12.pdf p.9–10</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. Optimal BST 要最小化的是什麼？它代表什麼意義？</summary>
+        <div class="answer">
+          <p>\(\sum f_jl_j\)，等於所有 \(f_1+\cdots+f_n\) 次搜尋的比較次數總和。</p>
+          <p class="src">Algo-Lecture-12.pdf p.15–16</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-12.pdf</code>　p.1–17（CS 4311 Introduction to Algorithms, Lecture 12）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

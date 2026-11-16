@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>排序 (Sorting) · 資料結構</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="data-structures" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">資料結構</a>
+      <span class="sep">/</span>
+      <span class="current">排序 (Sorting)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>排序 (Sorting)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>資料結構</dd>
+          <dt>單元</dt><dd>Session 8</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Session8 - Sorting_240526_172425.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">排序</span>
+          <span class="tag">編碼</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>Internal sort</strong> 全部在主記憶體完成；<strong>external sort</strong> 需要讀寫磁碟（用 merge sort）。</li>
+          <li><strong>Stable sort</strong>：key 相同的記錄，排序後維持原本的先後順序。Insertion、Merge 是 stable；Quick、Heap 不是。</li>
+          <li>只用比較與交換的排序，最好只能做到 \(\Omega(n\log n)\)（decision tree）。</li>
+          <li>Worst / Average：Insertion \(n^2/n^2\)；Heap、Merge \(n\log n/n\log n\)；Quick \(n^2/n\log n\)；Radix \(nk/nk\)。</li>
+          <li>Merge runs 或 Huffman 編碼：反覆合併<strong>最小的兩個</strong>，讓 weighted external path length 最小。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="motivation">1. 為什麼要排序</h2>
+      <ul>
+        <li>在每筆記錄有一或多個 key 的串列中找特定 key：sequential search 由左到右（或反向）找，\(O(N)\)。</li>
+        <li>改善：先把串列排序再搜尋。可以依排序規則插入（retrieval 時間要小），或一批插入後再排序（插入時間要小、很少 retrieval）。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>類別</th><th>說明</th><th>適用</th><th>種類</th></tr></thead>
+          <tbody>
+            <tr><td>Internal sort</td><td>整個排序在主記憶體完成</td><td>小串列（例如 1MB）</td><td>Insertion、Merge、Heap、Radix sort</td></tr>
+            <tr><td>External sort</td><td>排序過程中需要資料 I/O</td><td>大串列（例如 1T）</td><td>Merge sort</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Stable sort</span>
+          若 \(r_i=r_j\) 且輸入中 \(r_i\) 在 \(r_j\) 之前，則排序後 \(r_i\) 仍在 \(r_j\) 之前。例：21, 4, <u>5</u>, 78, 5, 12 → 4, <u>5</u>, 5, 12, 21, 78。
+        </div>
+      </div>
+      <p class="src">Session8 - Sorting_240526_172425.pdf p.3–6</p>
+
+      <!-- ===================================================== -->
+      <h2 id="insertion-sort">2. Insertion Sort</h2>
+      <p>把輸入分成左邊已排序、右邊未排序兩部分；每次從右邊取一個元素，插入左邊正確的位置。</p>
+      <pre><span class="pseudo-label">Insertion Sort（C++）</span><code>template &lt;class T&gt;
+void Insert(const T&amp; e, T *a, int i){
+    a[0] = e;
+    while (e &lt; a[i]) {
+        a[i+1] = a[i];
+        i--; }
+    a[i+1] = e;
+}
+template &lt;class T&gt;
+void InsertionSort(T *a, const int n){
+    for (int j = 2; j &lt;= n ; j++){
+        T temp = a[j];
+        Insert(temp, a, j - 1);}
+}</code></pre>
+      <ul>
+        <li>Worst case：外層 \(O(n)\)、內層 \(O(j)\) → \(O(n^2)\)；Average case 也是 \(O(n^2)\)。</li>
+        <li><strong>Stable</strong>。</li>
+      </ul>
+      <p class="src">Session8 - Sorting_240526_172425.pdf p.8–10</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quick-sort">3. Quick Sort</h2>
+      <p>Divide and conquer，使用一個 <strong>pivot</strong>：pivot 左邊的記錄 ≤ pivot，右邊的記錄 &gt; pivot。步驟：找出 pivot 的位置，再遞迴排序兩個子串列。</p>
+      <pre><span class="pseudo-label">QuickSort（C++）</span><code>template &lt;class T&gt;
+void QuickSort(T *a, const int left, const int right)
+{   if (left &lt; right) {
+        int i = left, j = right + 1, pivot = a[left];
+        do {
+            do i++; while (a[i] &lt; pivot);
+            do j--; while (a[j] &gt; pivot);
+            if (i &lt; j) swap (a[i], a[j]);
+        } while (i &lt; j);
+        swap (a[left], a[j]);
+        QuickSort(a, left, j - 1);
+        QuickSort(a, j + 1, right);
+    }
+}</code></pre>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：pivot = 26</span>
+          <ul>
+            <li>26 5 37 1 61 11 59 15 48 19 → 交換 37、19</li>
+            <li>26 5 19 1 61 11 59 15 48 37 → 交換 61、15</li>
+            <li>26 5 19 1 15 11 59 61 48 37 → \(i\ge j\)，交換 a[left] 與 a[j]</li>
+            <li>11 5 19 1 15 <strong>26</strong> 59 61 48 37 → 再分別遞迴排序左右兩邊</li>
+          </ul>
+        </div>
+      </div>
+      <ul>
+        <li>若切割點在中間：遞迴深度 \(O(\log n)\)，每層找切割點 \(O(n)\) → 平均 \(O(n\log n)\)。</li>
+        <li>Worst case：\(O(n^2)\)。</li>
+        <li>找更好的切割點：取 median{first, middle, last}。</li>
+        <li><strong>Not stable</strong>。</li>
+      </ul>
+      <p class="src">Session8 - Sorting_240526_172425.pdf p.12–16</p>
+
+      <!-- ===================================================== -->
+      <h2 id="bound">4. 排序的下界</h2>
+      <ul>
+        <li>若排序過程只使用比較與交換，\(\Omega(n\log n)\) 是最好的可能時間。</li>
+        <li><strong>Decision tree</strong>：描述排序過程的樹；每個 vertex 是一次比較，每個 branch 是比較的結果。講義以 3 個 key 的 insertion sort 畫出 decision tree。</li>
+        <li>\(n\) 筆記錄有 \(n!\) 種排列 → decision tree 有 \(n!\) 個 leaf → 平均 root-to-leaf 路徑為 \(\Omega(n\log n)\)。</li>
+      </ul>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          p.20 寫「The height (depth) of the tree is \(n\log n\)」。演算法課 Lecture 07 p.12 的寫法是「node-height \(\ge\log(n!)\ge(n/2)\log(n/2)=\Omega(n\log n)\)」，兩者表述不同，請對照講義確認。
+        </div>
+      </div>
+      <p class="src">Session8 - Sorting_240526_172425.pdf p.18–20；Algo-Lecture-07.pdf p.12</p>
+
+      <!-- ===================================================== -->
+      <h2 id="merge-sort">5. Merge Sort</h2>
+      <p>把已排序的串列合併成一個排序好的串列；divide and conquer：一直切到串列已排序，再遞迴合併。<strong>Stable</strong>。</p>
+      <h3 id="merging">Merging</h3>
+      <p>合併兩個排序好的串列，作法類似多項式加法；兩串列大小為 \(m\)、\(l\) 時，合併時間 \(O(m+l)\)。</p>
+      <pre><span class="pseudo-label">Merge（C++）</span><code>template &lt;class T&gt;
+void Merge(T *initList, T *mergedList, const int l, const int m, const int n)
+{   for (int i1 = l, iResult = l, i2 = m + 1; i1 &lt;= m &amp;&amp; i2 &lt;= n; iResult++)
+        if (initList[i1] &lt;= initList[i2]){
+            mergedList[iResult] = initList[i1];
+            i1++;
+        }else{
+            mergedList[iResult] = initList[i2];
+            i2++;}
+    // copy the remaining records, if any, of 1st list
+    copy (initList + i1, initList + m + 1, mergedList + iResult);
+    // copy the remaining records, if any, of 2nd list
+    copy (initList + i2, initList + n + 1, mergedList + iResult);
+}</code></pre>
+
+      <h3 id="iterative-merge">Iterative Merge Sort</h3>
+      <p>把串列看成 \(n\) 個已排序的子串列；第 1 輪兩兩合併得到 \(n/2\) 個，第 2 輪得到 \(n/4\) 個…直到只剩一個。</p>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">MergePass 例子</span>
+          <ul>
+            <li>26 | 5 | 77 | 1 | 61 | 11 | 59 | 15 | 48 | 19</li>
+            <li>5, 26 | 1, 77 | 11, 61 | 15, 59 | 19, 48</li>
+            <li>1, 5, 26, 77 | 11, 15, 59, 61 | 19, 48</li>
+            <li>1, 5, 11, 15, 26, 59, 61, 77 | 19, 48</li>
+            <li>1, 5, 11, 15, 19, 26, 48, 59, 61, 77</li>
+          </ul>
+        </div>
+      </div>
+      <ul>
+        <li>Merge pass 的次數 \(O(\log n)\)，每個 merge pass \(O(n)\) → \(O(n\log n)\)。</li>
+        <li>需要額外空間存放合併結果。</li>
+      </ul>
+
+      <h3 id="recursive-merge">Recursive Merge Sort</h3>
+      <p>把串列分成大致相等的左右兩半，遞迴排序兩個子串列，再合併。講義實作用 <code>link[]</code> 陣列串起排序結果（<code>rMergeSort</code> + <code>ListMerge</code>），回傳排序後串列第一個元素的 index。</p>
+      <pre><span class="pseudo-label">rMergeSort（C++）</span><code>template &lt;class T&gt;
+int rMergeSort(T* a, int* link, const int left, const int right)
+{ // sorting a[left:right]. link[i] is initialize to 0.
+  // rMerge returns the index of 1st element in the sorted list.
+    if (left &gt;= right) return left;
+    int mid = (left + right) /2;
+    return ListMerge(a, link,
+        rMergeSort(a, link, left, mid),       // sort left sublist.
+        rMergeSort(a, link, mid + 1, right)); // sort right sublist.
+}</code></pre>
+      <p class="src">Session8 - Sorting_240526_172425.pdf p.22–34</p>
+
+      <!-- ===================================================== -->
+      <h2 id="heap-sort">6. Heap Sort</h2>
+      <ul>
+        <li>利用 max-heap：插入與刪除都是 \(O(\log n)\)。</li>
+        <li>把 \(n\) 筆記錄逐一插入建立 max-heap：\(O(n\log n)\)；反覆從 max-heap 移除最大的記錄（root）：\(O(n\log n)\)。</li>
+        <li><strong>Not stable</strong>。</li>
+      </ul>
+      <pre><span class="pseudo-label">HeapSort（C++）</span><code>template &lt;class T&gt;
+void HeapSort(T *a, const int n)
+{
+    Heapify(a, n);
+    for (i = n-1; i &gt;= 1; i--)  // Sorting
+    {
+        swap(a[1], a[i+1]);     // swap the root with last node
+        Heapify(a, i);          // rebuild the heap (a[1:i])
+    }
+}</code></pre>
+      <p class="src">Session8 - Sorting_240526_172425.pdf p.36–38</p>
+
+      <!-- ===================================================== -->
+      <h2 id="several-keys">7. 多個 key 的排序與 Radix Sort</h2>
+      <p>記錄依 keys \(K_1,K_2,\dots,K_r\) 排序：對每一對 \(i&lt;j\)，\((K_i^1,\dots,K_i^r)\le(K_j^1,\dots,K_j^r)\)。例：撲克牌有兩個 key，K1 花色 ♣ &lt; ♦ &lt; ♥ &lt; ♠、K2 點數 2 &lt; 3 &lt; … &lt; K &lt; A，排序結果為 2♣, …, A♣, …, 2♠, …, A♠。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>方法</th><th>步驟</th></tr></thead>
+          <tbody>
+            <tr><td>MSD (Most-significant-digit) sort</td><td>先依 K1 分成 4 堆 → 每堆再分成小堆 → 依序疊起來</td></tr>
+            <tr><td>LSD (Least-significant-digit) sort</td><td>先依 K2 分成 13 堆並疊好（3 放在 2 上面…A 放在 K 上面）→ 再對 K1 做 <strong>stable sort</strong> 得到 4 堆 → 疊起來</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><strong>Bin Sort (Bucket Sort)</strong>：記錄來自大小為 \(m\) 的集合 \(\{1,\dots,m\}\)；建立 \(m\) 個 bucket，把 a[\(i\)] 放進第 a[\(i\)] 個 bucket，再把所有 bucket 串起來。適合 \(m\) 小的情況。</li>
+        <li><strong>Radix Sort</strong>：用某個 radix (base) \(r\) 把 key 拆成 subkeys，以 MSD 或 LSD 順序套用 bin sort。適合數值範圍很大的數字。時間 \(O(d(n+r))\)。</li>
+        <li>講義的 LSB radix sort 實作用 <code>link[]</code> 串起元素，每個 bin 用 <code>f[k]</code>（head）與 <code>e[k]</code>（tail）記錄，從最低位到最高位做 \(d\) 輪。</li>
+      </ul>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          p.43 寫「Create r-1 buckets」，但 p.45 的程式宣告 <code>int e[r], f[r];</code>（\(r\) 個 bin，digit 範圍為 \([0,r)\)），兩處數量不一致，請對照講義確認。
+        </div>
+      </div>
+      <p class="src">Session8 - Sorting_240526_172425.pdf p.40–46</p>
+
+      <!-- ===================================================== -->
+      <h2 id="summary">8. Internal Sorting 總結</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>方法</th><th>Worst</th><th>Average</th><th>Stable</th></tr></thead>
+          <tbody>
+            <tr><td>Insertion Sort</td><td>\(n^2\)</td><td>\(n^2\)</td><td>是</td></tr>
+            <tr><td>Heap Sort</td><td>\(n\log n\)</td><td>\(n\log n\)</td><td>否</td></tr>
+            <tr><td>Merge Sort</td><td>\(n\log n\)</td><td>\(n\log n\)</td><td>是</td></tr>
+            <tr><td>Quick Sort</td><td>\(n^2\)</td><td>\(n\log n\)</td><td>否</td></tr>
+            <tr><td>Radix Sort</td><td>\(nk\)</td><td>\(nk\)</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>講義實測（單位依講義）：\(n=5000\) 時 Insert 15.935、Heap 1.410、Merge 1.271、Quick 0.970；\(n=50\) 時 Insert 0.004 最快。</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Design Guidelines</span>
+          <ul>
+            <li>Insertion sort 適合 \(n\) 很小，或串列已部分排序的情況。</li>
+            <li>Merge sort 比 heap sort 稍快，但需要額外空間。</li>
+            <li>平均而言 Quick sort 表現最好。</li>
+          </ul>
+        </div>
+      </div>
+      <p class="src">Session8 - Sorting_240526_172425.pdf p.47–50</p>
+
+      <!-- ===================================================== -->
+      <h2 id="external-sort">9. External Sort</h2>
+      <ul>
+        <li>串列太大無法全部載入記憶體（可能在磁碟上）：讀入部分記錄 → 排序 → 寫回磁碟。</li>
+        <li><strong>Block</strong>：一次讀寫的資料單位。</li>
+        <li>演算法：用 internal sort 把輸入切成多個已排序的片段（<strong>runs</strong>），再依 <strong>merge tree</strong> 合併。</li>
+        <li>為什麼用 merge sort？子串列可以各自排序再合併；合併時只需要把兩個 run 的開頭記錄載入記憶體。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子</span>
+          記憶體 750 筆記錄、block 大小 250 筆，要排序 4500（250×18）筆。合併 R1、R2 時：先把兩者的第一個 block 讀入 input buffer，合併結果寫到 output buffer；output buffer 滿了就寫回磁碟，input buffer 空了就讀入下一個 block。
+        </div>
+      </div>
+
+      <h3 id="optimal-merge">Optimal Merging of Runs</h3>
+      <p>Runs 大小不同時，不同的合併順序會有不同的執行時間。總合併量為 <strong>weighted external path length</strong>：</p>
+      \[\sum_{i=1}^{n}s_id_i\]
+      <p>其中 \(s_i\) 是 Run \(i\) 的大小、\(d_i\) 是該節點到 root 的距離。最小化方法：把 runs 依大小排序，<strong>取兩個最小的合併成一棵樹</strong>，重複直到只剩一棵樹（例：2, 4, 5, 15 → 6 → 11 → 26）。</p>
+      <p class="src">Session8 - Sorting_240526_172425.pdf p.52–58</p>
+
+      <!-- ===================================================== -->
+      <h2 id="huffman">10. Message Encoding 與 Huffman Codes</h2>
+      <ul>
+        <li>給定訊息 \(\{M_1,\dots,M_i\}\)，要用唯一的二進位碼編碼每個訊息。</li>
+        <li><strong>Huffman codes</strong>：用一棵 binary tree（<strong>decode tree</strong>）來編碼。</li>
+        <li>解碼成本與碼的 bit 數成正比；若 \(M_i\) 的傳送頻率為 \(q_i\)，總成本為 \(\sum_{i=1}^{n}q_id_i\)。</li>
+        <li>建 decode tree 的方法同 optimal merge：依 \(q_i\) 排序，<strong>取兩個 \(q_i\) 最小的合併</strong>，重複直到只剩一棵樹。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：M1 = 1/7、M3 = 1/7、M2 = 2/7、M4 = 3/7</span>
+          講義列出兩種等價的 Huffman code：(M1, M2, M3, M4) = (111, 10, 110, 0) 或 (000, 01, 001, 1)，出現最頻繁的 M4 只用 1 個 bit。
+        </div>
+      </div>
+      <p class="src">Session8 - Sorting_240526_172425.pdf p.60–64</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 什麼是 stable sort？Insertion、Quick、Merge、Heap 哪些是 stable？</summary>
+        <div class="answer">
+          <p>key 相同的記錄排序後維持原本先後順序。Insertion、Merge 是 stable；Quick、Heap 不是。</p>
+          <p class="src">Session8 - Sorting_240526_172425.pdf p.6, p.10, p.16, p.22, p.36</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Quick sort 的 worst 與 average 時間？如何找比較好的 pivot？</summary>
+        <div class="answer">
+          <p>Worst \(O(n^2)\)、average \(O(n\log n)\)。取 median{first, middle, last}。</p>
+          <p class="src">Session8 - Sorting_240526_172425.pdf p.15–16</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 為什麼 external sort 使用 merge sort？</summary>
+        <div class="answer">
+          <p>子串列可以各自排序再合併；合併時只需要把兩個 run 的開頭記錄載入記憶體。</p>
+          <p class="src">Session8 - Sorting_240526_172425.pdf p.53</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. LSD sort 排撲克牌的步驟？為什麼第二步要 stable？</summary>
+        <div class="answer">
+          <p>先依點數 K2 分 13 堆並疊好，再依花色 K1 做 stable sort 得到 4 堆後疊起來。要 stable 才能保留第一步依點數排好的順序。</p>
+          <p class="src">Session8 - Sorting_240526_172425.pdf p.41</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 如何建出讓 weighted external path length 最小的 merge tree / decode tree？</summary>
+        <div class="answer">
+          <p>依大小（或頻率）排序，每次取最小的兩個合併成一棵樹，重複直到只剩一棵樹。</p>
+          <p class="src">Session8 - Sorting_240526_172425.pdf p.58, p.63</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Session8 - Sorting_240526_172425.pdf</code>　p.1–64（Yi-Shin Chen, Data Structures）</li>
+        <li><code>Algo-Lecture-07.pdf</code>　p.12（對照用）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>樹 (Trees) · 資料結構</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="data-structures" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">資料結構</a>
+      <span class="sep">/</span>
+      <span class="current">樹 (Trees)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>樹 (Trees)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>資料結構</dd>
+          <dt>單元</dt><dd>Session 6</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Session6-Trees Handout.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">樹</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>Binary tree 第 \(i\) 層最多 \(2^{i-1}\) 個節點，深度 \(k\) 最多 \(2^k-1\) 個節點；complete binary tree 適合用<strong>陣列</strong>表示（parent = \(i/2\)、left = \(2i\)、right = \(2i+1\)）。</li>
+          <li>走訪：Inorder（左→根→右）、Preorder（根→左→右）、Postorder（左→右→根）用 <strong>stack</strong>；Level-order 用 <strong>queue</strong>。</li>
+          <li><strong>Max heap</strong>：complete binary tree 且 parent ≥ child；插入往上比、刪除（永遠刪 root）往下 trickle down，時間都跟樹高有關。</li>
+          <li><strong>BST</strong>：左子樹 &lt; root &lt; 右子樹，inorder 走訪得到排序結果；search / insert / delete 都是 \(O(h)\)，\(h\) 介於 \(\log_2 n\) 與 \(n\)。</li>
+          <li><strong>Disjoint sets</strong>：用樹表示，Union \(O(1)\)；加上 <strong>weighting rule</strong> 與 <strong>collapsing rule</strong> 讓 \(n-1\) 次 union 與 \(n\) 次 find 為 \(O(n\cdot\alpha(n))\)。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="concept">1. 樹的定義與術語</h2>
+      <p>樹結構把資料以<strong>階層</strong>方式組織。<strong>Tree</strong> 是一個或多個節點的有限集合：有一個 root；其餘節點可分成 \(n\) 個互斥集合 \(T_1,T_2,\dots,T_n\)（\(n\ge 0\)），每個 \(T_i\) 也是一棵樹（稱為 root 的 subtree）。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>術語</th><th>定義</th></tr></thead>
+          <tbody>
+            <tr><td>Degree of a node</td><td>該節點的 subtree 數</td></tr>
+            <tr><td>Leaf / Terminal node</td><td>degree 為 0 的節點</td></tr>
+            <tr><td>Internal node</td><td>至少有一個 child、且不是 root 的節點</td></tr>
+            <tr><td>Degree of a tree</td><td>樹中所有節點 degree 的最大值</td></tr>
+            <tr><td>Sibling</td><td>同一個 parent 的 children</td></tr>
+            <tr><td>Ancestors</td><td>從 root 到該節點路徑上的所有節點</td></tr>
+            <tr><td>Descendants</td><td>該節點所有 subtree 中的節點</td></tr>
+            <tr><td>Level</td><td>Level(root) = 1；parent 的 level 為 \(l\) 時，節點的 level 為 \(l+1\)</td></tr>
+            <tr><td>Height / Depth of a tree</td><td>樹中節點的最大 level</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3 id="tree-representation">樹的表示法</h3>
+      <ul>
+        <li><strong>List representation</strong>：每個節點有一個 data 欄位與數個 link 欄位；degree 為 \(k\) 的樹，每個節點配置 \(k\) 個 link。</li>
+        <li><strong>Left Child-Right Sibling representation</strong>：每個節點恰好兩個 link：left link 指向最左邊的 child，right link 指向最近的 sibling。把它順時針轉 45° 就成為一棵 degree-2 tree（binary tree）。</li>
+      </ul>
+      <p class="src">Session6-Trees Handout.pdf p.3–10</p>
+
+      <!-- ===================================================== -->
+      <h2 id="binary-tree">2. Binary Tree</h2>
+      <p>Binary tree 是一個有限節點集合：可以是空的，或由一個 root 加上兩棵互斥的 binary tree（left subtree、right subtree）組成。左右是有區別的：同樣的樹，可能是不同的 binary tree。</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">最多節點數</span>
+          第 \(i\) 層最多 \(2^{i-1}\) 個節點；深度 \(k\) 的 binary tree 最多
+          \[1+2+2^2+\cdots+2^{k-1}=2^k-1\]
+          個節點。
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>特殊的 binary tree</th><th>定義</th></tr></thead>
+          <tbody>
+            <tr><td>Skewed tree</td><td>全部偏向左邊或右邊</td></tr>
+            <tr><td>Full binary tree</td><td>深度 \(k\) 且有 \(2^k-1\) 個節點</td></tr>
+            <tr><td>Complete binary tree</td><td>深度 \(k\)、\(n\) 個節點，且節點恰好對應到 full binary tree 中編號 1 到 \(n\) 的節點</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="bt-representation">Binary Tree 的表示法</h3>
+      <p><strong>Array representation</strong>：依 full binary tree 的編號存進一維陣列，節點 \(i\) 放在位置 \(i\)（array[0] 不用）：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>位置</th><th>公式</th><th>不存在的條件</th></tr></thead>
+          <tbody>
+            <tr><td>Parent(\(i\))</td><td>\(i/2\)</td><td>\(i=1\) 時是 root，沒有 parent</td></tr>
+            <tr><td>leftChild(\(i\))</td><td>\(2i\)</td><td>\(2i&gt;n\) 時沒有 left child</td></tr>
+            <tr><td>rightChild(\(i\))</td><td>\(2i+1\)</td><td>\(2i+1&gt;n\) 時沒有 right child</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>優點：很容易求出 parent、left child、right child 的位置。</li>
+        <li>缺點：skewed tree 浪費空間；插入、刪除節點需要搬動大部分既有節點（為了維持順序）。</li>
+        <li><strong>Linked representation</strong>：每個節點有三個欄位 data、leftChild、rightChild。</li>
+      </ul>
+      <p class="src">Session6-Trees Handout.pdf p.12–22</p>
+
+      <!-- ===================================================== -->
+      <h2 id="traversal">3. Binary Tree 走訪</h2>
+      <p>每個節點恰好拜訪一次，並以相同方式處理每個節點與它的 subtrees。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>走訪</th><th>順序</th><th>運算式樹 <code>A / B * C * D + E</code> 的結果</th><th>實作</th></tr></thead>
+          <tbody>
+            <tr><td>Inorder</td><td>left → root → right</td><td><code>A / B * C * D + E</code></td><td>Stack</td></tr>
+            <tr><td>Preorder</td><td>root → left → right</td><td><code>+ * * / A B C D E</code></td><td>Stack</td></tr>
+            <tr><td>Postorder</td><td>left → right → root</td><td><code>A B / C * D * E +</code></td><td>Stack</td></tr>
+            <tr><td>Level-order</td><td>由上到下、由左到右</td><td>—</td><td>Queue</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><span class="pseudo-label">遞迴 Inorder（C++，Preorder / Postorder 只是改變 Visit 的位置）</span><code>template &lt;class T&gt;
+void Tree&lt;T&gt;::Inorder(TreeNode&lt;T&gt;* currentNode)
+{ // Recursive inorder traversal function
+    if(currentNode){
+        Inorder(currentNode->leftChild);
+        Visit(currentNode); // e.g., printout information
+        Inorder(currentNode->RightChild);
+    }
+}</code></pre>
+      <pre><span class="pseudo-label">非遞迴 Inorder（C++，使用 stack）</span><code>template &lt; class T &gt;
+void Tree&lt;T&gt;::NonrecInorder()
+{ // Non recursive inorder traversal using stack
+    Stack&lt;TreeNode&lt;T&gt;*&gt; s;    // declare and init a stack
+    TreeNode&lt;T&gt;* currentNode = root;
+    while(1){
+        while(currentNode){ // move down leftChild field
+            s.Push(currentNode); // add to stack
+            currentNode = currentNode->leftChild;
+        }
+        if(s.IsEmpty()) return; // all nodes are visited
+        currentNode = s.Top();
+        s.Pop();
+        Visit(currentNode);     // e.g., printout information
+        currentNode = currentNode->rightNode;
+    }
+}</code></pre>
+      <p>把同樣的邏輯包成 nested class <code>InorderIterator</code>，每次呼叫 <code>Next()</code> 回傳下一個 inorder 元素。</p>
+      <pre><span class="pseudo-label">Level-Order（C++，使用 queue）</span><code>template &lt;class T&gt;
+void Tree&lt;T&gt;::LevelOrder()
+{ // Traverse the binary tree in level order
+    Queue&lt;TreeNode&lt;T&gt;*&gt; q;
+    TreeNode&lt;T&gt;* currentNode = root;
+    while(currentNode){
+        Visit(currentNode);
+        if(currentNode->leftChild) q.Push(currentNode->leftChild);
+        if(currentNode->rightChild) q.Push(currentNode->rightChild);
+        if(q.IsEmpty()) return;
+        currentNode = q.Front();
+        q.Pop();
+    }
+}</code></pre>
+      <p>講義自學主題：非遞迴與 iterator 版的 Preorder / Postorder、複製 binary tree、測試兩棵樹是否相等。</p>
+      <p class="src">Session6-Trees Handout.pdf p.23–35</p>
+
+      <!-- ===================================================== -->
+      <h2 id="heap">4. Heap 與 Priority Queue</h2>
+      <p><strong>Heap</strong> 是 complete binary tree，且 parent 的值：</p>
+      <ul>
+        <li>≥ child 的值 → <strong>Max Heap</strong></li>
+        <li>≤ child 的值 → <strong>Min Heap</strong></li>
+      </ul>
+      <p>因為是 complete binary tree，可以直接用 array representation。</p>
+
+      <h3 id="heap-insert">Max Heap：Insert</h3>
+      <ol>
+        <li>插入新節點，維持 complete binary tree</li>
+        <li>若新節點比 parent 大，兩者交換；重複直到不再比 parent 大</li>
+      </ol>
+      <pre><span class="pseudo-label">MaxPQ::Push（C++）</span><code>template &lt; class T &gt;
+void MaxPQ&lt;T&gt;::Push(const T&amp; e)
+{ // Insert e into max heap
+  // Make sure the array has enough space here…
+    int currentNode = ++heapSize;
+    while(currentNode != 1 &amp;&amp; heap[currentNode/2] &lt; e)
+    { // Swap with parent node
+        heap[currentNode]=heap[currentNode/2];
+        currentNode /= 2; // currentNode now points to parent
+    }
+    heap[currentNode]=e;
+}</code></pre>
+      <p>時間：最多走過樹的高度。</p>
+
+      <h3 id="priority-queue">Priority Queue 與 Max Heap：Delete</h3>
+      <p><strong>Priority queue</strong>：被刪除的是優先權最高的元素。應用：job scheduling、緊急服務、航管、客服、load balancing、交通管理、作業系統核心等。</p>
+      <ol>
+        <li>永遠刪除 root</li>
+        <li>把最後一個元素移到 root（維持 complete binary tree）</li>
+        <li>與較大的 child 交換（若有）</li>
+        <li>重複步驟 3，直到滿足 max heap（trickle down）</li>
+      </ol>
+      <pre><span class="pseudo-label">MaxPQ::Pop（C++）</span><code>template &lt; class T &gt;
+void MaxPQ&lt;T&gt;::Pop()
+{ //Delete max element
+    if(IsEmpty()) throw "Heap is empty";
+    heap[1].~T(); // delete max element (always the root!)
+    // Remove the last element from heap
+    T lastE = heap[heapSize--];
+    // trickle down
+    int currentNode = 1; // root
+    int child = 2;       // A child of currentNode
+    while(child &lt;= heapSize) {
+        // Set child to larger child of currentNode
+        if (child &lt; heapSize &amp;&amp; heap[child] &lt; heap[child + 1]) child++;
+        // Can we put lastE in currentNode?
+        if (lastE >= heap[child]) break; // Yes!
+        // No!
+        heap[currentNode] = heap[child]; // Move child up
+        currentNode = child; child *=2;  // Move down a level
+    }
+    heap[currentNode] = lastE;
+}</code></pre>
+      <p>時間 = 樹的高度。</p>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          p.41 與 p.44 的時間複雜度結果在講義中是空格（「Time Complexity = Height of tree = O(　)」），PDF 中沒有填入答案，請對照上課筆記補上。
+        </div>
+      </div>
+      <p class="src">Session6-Trees Handout.pdf p.38–44</p>
+
+      <!-- ===================================================== -->
+      <h2 id="bst">5. Binary Search Tree (BST)</h2>
+      <p>BST 是滿足以下條件的 binary tree：</p>
+      <ul>
+        <li>每個元素都有 key，且沒有兩個元素的 key 相同</li>
+        <li>左子樹的 key 都比 root 小；右子樹的 key 都比 root 大</li>
+        <li>左右子樹也都是 BST</li>
+      </ul>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">重點</span>
+          對 BST 做 <strong>inorder 走訪</strong>，會得到排序好的串列。
+        </div>
+      </div>
+      <p>搜尋機制通常要支援：搜尋元素、搜尋第 \(r\) 小的元素、插入、刪除最大/最小、刪除任意元素。</p>
+
+      <h3 id="bst-search">Search</h3>
+      <p>從 root 開始比較：比 root 小就搜尋左子樹、比 root 大就搜尋右子樹；重複直到找到 key 或走到 leaf。</p>
+      <pre><span class="pseudo-label">BST::Get 迭代版（C++）</span><code>template &lt; class K, class E &gt;
+pair&lt;K,E&gt;* BST&lt;K,E&gt;::Get(const K&amp; k)
+{
+    TreeNode &lt; pair&lt;K, E&gt; &gt; *currentNode = root;
+    while (currentNode) {
+        if (k &lt; currentNode->data.first)
+            currentNode = currentNode->leftChild;
+        else if (k &gt; currentNode->data.first)
+            currentNode = currentNode->rightChild;
+        else return &amp; currentNode->data;
+    }
+    return NULL; // no match found
+}</code></pre>
+
+      <h3 id="bst-rank">Search by Rank</h3>
+      <ul>
+        <li>節點的 <strong>rank</strong> = 它在 inorder 走訪中的位置；第 \(r\) 小的元素就是 rank 為 \(r\) 的節點。</li>
+        <li>每個節點多存 <code>leftSize</code> = 1 + 左子樹節點數。</li>
+        <li>\(r&lt;\) leftSize → 往左；\(r&gt;\) leftSize → \(r\) 減去 leftSize 後往右；相等 → 找到。</li>
+      </ul>
+
+      <h3 id="bst-insert">Insert</h3>
+      <p>先搜尋該元素是否存在；搜尋失敗時，就把元素插入在搜尋結束的位置。若 key 已存在，則更新它的值。</p>
+
+      <h3 id="bst-delete">Delete</h3>
+      <p>最小（最大）元素在最左邊（最右邊），不一定是 leaf，但最多只有一個 child。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>情況</th><th>處理方式</th></tr></thead>
+          <tbody>
+            <tr><td>Case 1：要刪除的是 leaf</td><td>把 parent 對應的 child 欄位設為 NULL，釋放節點</td></tr>
+            <tr><td>Case 2：非 leaf，只有一個 child</td><td>讓 parent 的指標改指向那唯一的 child，釋放節點</td></tr>
+            <tr><td>Case 3：非 leaf，有兩個 children</td><td>用最接近的元素取代：<strong>右子樹最小的元素</strong>或<strong>左子樹最大的元素</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="bst-complexity">時間複雜度</h3>
+      <ul>
+        <li>Search、insert、delete 都是 \(O(h)\)，\(h\) = BST 的高度。</li>
+        <li>Worst case \(h=n\)：例如依序插入 1, 2, 3, 4, …</li>
+        <li>Best case \(h=\log_2 n\)：例如依序插入 4, 2, 6, 1, 3, 5, 7</li>
+        <li>BST 的形狀取決於元素插入與刪除的方式。</li>
+      </ul>
+      <p class="src">Session6-Trees Handout.pdf p.46–60</p>
+
+      <!-- ===================================================== -->
+      <h2 id="forest">6. Forests</h2>
+      <p><strong>Forest</strong>：\(n\ge 0\) 棵互斥樹的集合。</p>
+      <ul>
+        <li><strong>轉成 binary tree</strong>：每棵樹用 left child-right sibling 方式轉成 binary tree，再把 \(T_1\) root 的 rightChild 設為 \(T_2\) 的 root，依此串接。</li>
+        <li><strong>Forest traversal</strong>：binary tree \(T\) 的 preorder 走訪，等同於對 forest \(F\) 做 forest preorder（先 root，再左邊的 forest，再右邊的 forest）。例：A B C D E F G H I。</li>
+      </ul>
+      <p class="src">Session6-Trees Handout.pdf p.62–64</p>
+
+      <!-- ===================================================== -->
+      <h2 id="disjoint-sets">7. Disjoint Sets</h2>
+      <p>集合 \(S=\{0,1,\dots,n-1\}\) 分成數個子集 \(S_1,\dots,S_k\)，且 \(S_i\cap S_j=\emptyset\)（\(i\ne j\)）。操作：</p>
+      <ul>
+        <li><strong>Union(\(S_i,S_j\))</strong>：\(S_i=S_i\cup S_j\) 或 \(S_j=S_i\cup S_j\)</li>
+        <li><strong>Find(\(x\))</strong>：找出包含 \(x\) 的集合</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子</span>
+          \(S=\{0,1,2,3,4,5\}\)，\(S_1=\{0,2,3\}\)、\(S_2=\{1\}\)、\(S_3=\{4,5\}\)。Union(\(S_1,S_2\)) = \(\{0,1,2,3\}\)；Find(5) = 3。
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>表示法</th><th>做法</th><th>Find</th><th>Union</th></tr></thead>
+          <tbody>
+            <tr><td>Array（sequential mapping）</td><td>index = 集合成員，值 = 集合名稱，例：S = [1, 2, 1, 1, 3, 3]</td><td>直接查表，\(O(1)\)</td><td>掃描整個陣列，把值為 \(j\) 的改成 \(i\)</td></tr>
+            <tr><td>Tree</td><td>每個子集是一棵樹，以 root 代表集合；用陣列存 parent，root 存 −1。例：T = [−1, −1, 0, 0, −1, 4]</td><td>從 \(x\) 沿 parent 往上找，直到 parent 為 −1</td><td>把一個 root 的 parent 設為另一個 root，\(O(1)\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">最壞情況</span>
+          \(S_1=\{0\},\dots,S_n=\{n-1\}\)，依序執行 Union(\(S_2,S_1\))、Union(\(S_3,S_2\))、…、Union(\(S_n,S_{n-1}\))，會形成一條長鏈；之後再執行 Find(0)、Find(1)、…、Find(\(n-1\)) 會很慢。
+        </div>
+      </div>
+
+      <h3 id="weighting-rule">改進一：Weighting rule（Union）</h3>
+      <p>不要總是把第二個集合併到第一個，而是把小的併到大的：</p>
+      \[S_i=S_i\cup S_j\ \text{ if } |S_i|\ge|S_j|,\qquad S_j=S_i\cup S_j\ \text{ if } |S_i|&lt;|S_j|\]
+      <p>例：Union(1, 2)、Union(3, 4)、Union(5, 6)、Union(7, 8)、Union(1, 3)、Union(5, 7)、Union(1, 5) 這個序列會產生高度 \(\log n\) 的樹。</p>
+
+      <h3 id="collapsing-rule">改進二：Collapsing rule（Find）</h3>
+      <p>若 \(j\) 是從 \(i\) 到 root 路徑上的節點，就把 parent[\(j\)] 直接設成 root(\(i\))。</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">結果</span>
+          \(n-1\) 次 union 與 \(n\) 次 find 的總時間為 \(O(n\cdot\alpha(n))\)，平均 \(\alpha(n)\le\log n\)。
+        </div>
+      </div>
+      <p class="src">Session6-Trees Handout.pdf p.66–78</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 深度 \(k\) 的 binary tree 最多有幾個節點？什麼是 complete binary tree？</summary>
+        <div class="answer">
+          <p>\(2^k-1\) 個。深度 \(k\)、\(n\) 個節點的 binary tree，若節點恰好對應 full binary tree 中編號 1 到 \(n\) 的節點，就是 complete binary tree。</p>
+          <p class="src">Session6-Trees Handout.pdf p.13, p.16</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 用陣列表示 binary tree 時，節點 \(i\) 的 parent、left child、right child 在哪裡？</summary>
+        <div class="answer">
+          <p>Parent 在 \(i/2\)（\(i\ne 1\)）、left child 在 \(2i\)（\(2i\le n\)）、right child 在 \(2i+1\)（\(2i+1\le n\)）。</p>
+          <p class="src">Session6-Trees Handout.pdf p.19</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 哪一種走訪要用 queue 實作？</summary>
+        <div class="answer">
+          <p>Level-order；Preorder、Inorder、Postorder 用 stack。</p>
+          <p class="src">Session6-Trees Handout.pdf p.33</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 從 max heap 刪除元素的步驟？</summary>
+        <div class="answer">
+          <p>刪除 root → 把最後一個元素移到 root → 與較大的 child 交換 → 重複直到滿足 max heap（trickle down）。</p>
+          <p class="src">Session6-Trees Handout.pdf p.43</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. BST 刪除有兩個 children 的節點時，要用哪個元素取代？</summary>
+        <div class="answer">
+          <p>最接近的元素：右子樹中最小的元素，或左子樹中最大的元素。</p>
+          <p class="src">Session6-Trees Handout.pdf p.59</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q6. Disjoint sets 的 weighting rule 和 collapsing rule 分別是什麼？</summary>
+        <div class="answer">
+          <p>Weighting rule：Union 時把較小的集合併到較大的集合。Collapsing rule：Find 時把路徑上每個節點的 parent 直接設為 root。</p>
+          <p class="src">Session6-Trees Handout.pdf p.76, p.78</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Session6-Trees Handout.pdf</code>　p.1–78（Yi-Shin Chen, Data Structures）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

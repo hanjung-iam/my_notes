@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>頂點覆蓋 (Vertex Cover) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">頂點覆蓋 (Vertex Cover)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>頂點覆蓋 (Vertex Cover)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 11</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-11.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">動態規劃</span>
+          <span class="tag">圖論</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>Vertex cover</strong>：在最少的頂點放守衛，使每條邊（道路）都被保護。一般圖上非常難，目前沒有已知的多項式時間演算法。</li>
+          <li>限制在<strong>樹</strong>上時，可以用 DP 在線性時間求出最少守衛數，再用 backtracking 求出擺放方式。</li>
+          <li>只存子樹的最少守衛數 Best 不夠，還要存「根一定要放守衛」時的最少守衛數 <strong>Best1</strong>。</li>
+          <li>\(\text{Best1}(v)=1+\sum \text{Best}(c_i)\)；\(\text{Best}(v)=\min\{\sum \text{Best1}(c_i),\ \text{Best1}(v)\}\)。</li>
+          <li>用 DFS 走訪，總時間 = 頂點數 + 邊數 = \(O(n)\)。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="problem">1. Vertex Cover 問題</h2>
+      <ul>
+        <li>\(G\) 是一個無向圖。把頂點想成路口、邊想成道路。</li>
+        <li>在頂點 \(v\) 放一個守衛，所有連到 \(v\) 的道路都會被保護。</li>
+        <li>問題：最少要放幾個守衛，才能保護所有道路？</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子</span>
+          講義的範例圖中，可以放 4 個守衛保護所有道路，但最好的放法只需要 3 個。
+        </div>
+      </div>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">難度</span>
+          一般情況下這個問題非常難，目前<strong>沒有已知的多項式時間演算法</strong>。但若把圖限制為<strong>樹</strong>，就能用 DP 在<strong>線性時間</strong>求出最少守衛數，再用 backtracking 求出擺放方式。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-11.pdf p.3–6</p>
+
+      <!-- ===================================================== -->
+      <h2 id="rooted-tree">2. 樹上的 Vertex Cover</h2>
+      <h3 id="think-backward">倒著想</h3>
+      <p>令 \(T\) 為輸入的樹，先任選一個頂點當作根。假設已經知道每個子節點的子樹的最佳放法，能不能得到整棵 \(T\) 的最佳放法？</p>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">只知道子樹的最佳數量不夠</span>
+          講義用兩個例子說明：兩棵子樹的 Best 都是 1，但整棵樹的最佳值一個是 3、一個是 2。問題在於子樹的最佳放法<strong>可能有、也可能沒有在子樹的根放守衛</strong>，這會造成很大的差別。
+        </div>
+      </div>
+
+      <h3 id="best-best1">多存一點資訊</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>名稱</th><th>意義</th></tr></thead>
+          <tbody>
+            <tr><td>Best</td><td>子樹中最少要放幾個守衛</td></tr>
+            <tr><td>Best1</td><td>子樹中最少要放幾個守衛，但<strong>規定根一定要放守衛</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>對一個有子節點 \(c_1,c_2,c_3,\dots\) 的頂點 \(v\)：</p>
+      \[\begin{aligned}
+      \text{Best1}(v) &amp;= 1+\text{Best}(c_1)+\text{Best}(c_2)+\text{Best}(c_3)+\cdots \\
+      \text{Best}(v) &amp;= \min\{\text{Best1}(c_1)+\text{Best1}(c_2)+\text{Best1}(c_3)+\cdots,\ \ \text{Best1}(v)\}
+      \end{aligned}\]
+
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子（講義 Example Run）</span>
+          <ul>
+            <li>葉節點：Best = 0、Best1 = 1</li>
+            <li>由下往上逐層計算，例如出現 (Best = 1, Best1 = 1)、(Best = 1, Best1 = 2) 等節點</li>
+            <li>第一個範例樹的根：Best = 3、Best1 = 3；第二個範例樹的根：Best = 2、Best1 = 3</li>
+          </ul>
+          （樹的形狀請見講義圖示。）
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-11.pdf p.7–19</p>
+
+      <!-- ===================================================== -->
+      <h2 id="running-time">3. 執行時間與擺放方式</h2>
+      <ul>
+        <li>用 <strong>Depth-First Search</strong>（線性時間）走訪 \(T\)；在 \(v\) 最後一次被拜訪時，就能算出 \(v\) 子樹的最少守衛數。</li>
+        <li>花在頂點 \(v\) 的時間 = \(1+\) \(v\) 的子節點數</li>
+        <li>總時間 = 頂點數 + 邊數 = \(O(n)\)</li>
+        <li>守衛的實際擺放位置：用 backtracking 求出（講義以 p.21–25 的圖示逐步示範）。</li>
+      </ul>
+      <p class="src">Algo-Lecture-11.pdf p.20–25</p>
+
+      <!-- ===================================================== -->
+      <h2 id="general">4. 延伸：Greedy 與加權版本</h2>
+      <ul>
+        <li>這個問題其實也可以用一個更簡單、完全不同的策略解決，稱為 <strong>greedy method</strong>。</li>
+        <li>但 DP 的做法可以處理更一般的情況：若在不同頂點放守衛的<strong>成本不同</strong>，如何在樹上找出成本最小的擺放方式？（講義提問）</li>
+      </ul>
+      <p class="src">Algo-Lecture-11.pdf p.26</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 一般圖上的 vertex cover 問題有多難？限制在樹上呢？</summary>
+        <div class="answer">
+          <p>一般圖上非常難，沒有已知的多項式時間演算法；限制在樹上時可以用 DP 在線性時間解出。</p>
+          <p class="src">Algo-Lecture-11.pdf p.6</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 為什麼只記錄子樹的 Best 不夠？</summary>
+        <div class="answer">
+          <p>子樹的最佳放法可能有、也可能沒有在子樹的根放守衛，這會影響父節點是否需要放守衛。</p>
+          <p class="src">Algo-Lecture-11.pdf p.10</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 寫出 Best1(v) 和 Best(v) 的遞迴式。</summary>
+        <div class="answer">
+          <p>\(\text{Best1}(v)=1+\sum_i \text{Best}(c_i)\)；\(\text{Best}(v)=\min\{\sum_i \text{Best1}(c_i),\ \text{Best1}(v)\}\)。</p>
+          <p class="src">Algo-Lecture-11.pdf p.12</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 葉節點的 Best 與 Best1 是多少？</summary>
+        <div class="answer">
+          <p>Best = 0、Best1 = 1。</p>
+          <p class="src">Algo-Lecture-11.pdf p.13</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 這個 DP 的總時間是多少？為什麼？</summary>
+        <div class="answer">
+          <p>\(O(n)\)。用 DFS 走訪，每個頂點花 \(1+\) 子節點數的時間，總和 = 頂點數 + 邊數。</p>
+          <p class="src">Algo-Lecture-11.pdf p.20</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-11.pdf</code>　p.1–26（CS 4311 Introduction to Algorithms, Lecture 11）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

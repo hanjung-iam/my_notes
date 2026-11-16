@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>攤銷分析 (Amortized Analysis) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">攤銷分析 (Amortized Analysis)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>攤銷分析 (Amortized Analysis)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 14–15</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-14.pdf</code>、<code>Algo-Lecture-15.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">攤銷分析</span>
+          <span class="tag">複雜度分析</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>Amortized analysis</strong>：分析<strong>任何</strong>操作序列中，每個操作的平均時間。</li>
+          <li>三種方法：<strong>Aggregate</strong>（總成本 ÷ \(n\)）、<strong>Accounting</strong>（先定攤銷成本，多的存進銀行）、<strong>Potential</strong>（先定位能函數 \(\Phi\)，再算攤銷成本）。</li>
+          <li>攤銷成本唯一的要求：對任何操作序列，<strong>攤銷成本總和 \(\ge\) 實際成本總和</strong>。</li>
+          <li>Super Stack（Push / Pop / SuperPop）與 Binary Counter（increment），每個操作的攤銷成本都是 \(O(1)\)。</li>
+          <li>Potential method 的條件：\(\alpha_i+\Phi_{i-1}-\Phi_i\ge a_i\)，且 \(\Phi_0=0\)、\(\Phi\) 永遠非負。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="examples">1. 兩個範例問題</h2>
+      <h3 id="super-stack">Super Stack</h3>
+      <ul>
+        <li>一般的 stack \(S\) 支援兩個常數時間的操作：\(\text{Push}(x)\) 把 \(x\) 放入 \(S\)；\(\text{Pop}()\) 移除最後放入的項目。</li>
+        <li>多加一個操作 \(\text{SuperPop}()\)：移除 \(S\) 中所有項目，時間 = \(O(1+\#\text{removed items})\)。</li>
+        <li>從空的 stack 開始，執行 \(n\) 個（未知的）操作。單一操作的 worst case 是多少？全部 \(n\) 個操作呢？</li>
+      </ul>
+
+      <h3 id="binary-counter">Binary Counter</h3>
+      <ul>
+        <li>一開始計數器的值為 0；每次 increment 後，內容變成新值的二進位表示。</li>
+        <li>一次 increment 的<strong>成本 = 改變的 bit 數</strong>。例（講義圖中最左邊是最低位 \(b_0\)）：count = 5 時為 10100，count = 6 時為 01100，cost = 2。</li>
+      </ul>
+      <p class="src">Algo-Lecture-14.pdf p.2–4, p.9–10</p>
+
+      <!-- ===================================================== -->
+      <h2 id="aggregate">2. Aggregate Method</h2>
+      <h3 id="agg-stack">Super Stack</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>分析</th><th>推理</th><th>\(n\) 個操作的總時間</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Naïve</td>
+              <td>Push、Pop 都是 \(O(1)\)，SuperPop 可能是 \(O(n)\)（例：\(n-1\) 次 Push 後 SuperPop）</td>
+              <td>\(O(n^2)\)（正確，但不是最好的）</td>
+            </tr>
+            <tr>
+              <td>Better</td>
+              <td>所有 SuperPop 移除的項目數不可能超過曾經 push 的項目數 → 總共最多移除 \(n\) 個 → SuperPop 總時間 \(O(n)\)；Push、Pop 總時間也 \(O(n)\)</td>
+              <td>\(O(n)\)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>不論執行哪 \(n\) 個操作、順序如何，總時間最多 \(O(n)\) → 每個操作平均 \(O(1)\)，正式稱為 <strong>amortized time</strong>。</p>
+
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Amortized cost 的意思</span>
+          若 OP<sub>1</sub>、OP<sub>2</sub>、OP<sub>3</sub> 的攤銷時間分別是 \(O(t_1)\)、\(O(t_2)\)、\(O(t_3)\)，則對任何含 \(n_1\) 個 OP<sub>1</sub>、\(n_2\) 個 OP<sub>2</sub>、\(n_3\) 個 OP<sub>3</sub> 的操作序列，總時間 = \(O(n_1t_1+n_2t_2+n_3t_3)\)。
+        </div>
+      </div>
+
+      <h3 id="agg-counter">Binary Counter</h3>
+      <ul>
+        <li><strong>Naïve</strong>：單一操作最多改變 \(\log n\) 個 bits → \(n\) 個操作為 \(O(n\log n)\)（正確，但不是最好的）。</li>
+        <li><strong>Better</strong>：把 bits 由右到左記為 \(b_0,b_1,b_2,\dots\)。觀察：\(b_k\) 每 \(2^k\) 次操作才翻轉一次；精確地說，\(b_k\) 在第 \(x\) 次 increment 翻轉 \(\iff\) \(x\) 可被 \(2^k\) 整除。</li>
+      </ul>
+      \[\text{total cost}=\sum_{k=0}^{\infty}\left\lfloor \frac{n}{2^k}\right\rfloor \le \sum_{k=0}^{\infty}\frac{n}{2^k} &lt; 2n\]
+      <p>→ 每個操作的攤銷成本為 \(O(1)\)。</p>
+
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Aggregate Method 的步驟</span>
+          <ol>
+            <li>求出 \(n\) 個操作的<strong>總成本</strong>（aggregation）</li>
+            <li>把總成本除以 \(n\)</li>
+          </ol>
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-14.pdf p.5–14</p>
+
+      <!-- ===================================================== -->
+      <h2 id="accounting">3. Accounting Method</h2>
+      <p>就像銀行帳戶：多的錢先存起來，需要時再拿出來用。</p>
+      <ul>
+        <li>每個操作支付一個<strong>攤銷成本</strong>。</li>
+        <li>攤銷成本 \(\ge\) 實際成本 → 多出來的存進銀行。</li>
+        <li>攤銷成本 &lt; 實際成本 → 不夠的部分用銀行存款補。</li>
+      </ul>
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">唯一的要求</span>
+          對任何操作序列，攤銷成本總和 \(\ge\) 實際成本總和。Accounting method 的目標是設計攤銷成本，讓<strong>銀行永遠有足夠的錢</strong>支付實際成本；做到這點，上述要求就滿足了。
+        </div>
+      </div>
+
+      <h3 id="acc-stack">Super Stack</h3>
+      <p>攤銷成本：Push = $2；Pop 或 SuperPop = $1。</p>
+      <ul>
+        <li>Push：$1 支付實際成本，多的 $1 存進銀行，並把這 $1 想成「綁在被 push 的那個項目上」。</li>
+        <li>Pop / SuperPop 移除 \(k\) 個項目：實際成本 = \(1+k\)；攤銷成本支付 1，被移除項目綁著的 $1 支付 \(k\) → 永遠付得起。</li>
+      </ul>
+
+      <h3 id="acc-counter">Binary Counter</h3>
+      <p>攤銷成本：每次 increment = $2。計數器中<strong>每個 bit 1 都綁著 $1</strong>。</p>
+      <ul>
+        <li>觀察：每次 increment 最多只有<strong>一個</strong> bit 從 0 變 1，其他翻轉的 bits 都是從 1 變 0。</li>
+        <li>若一次翻轉 \(k\) 個 bits：最右邊 \(k-1\) 個 bits 由 1 變 0，第 \(k\) 個 bit 由 0 變 1。</li>
+        <li>用那 \(k-1\) 個 bit 1 綁著的錢翻轉它們，用攤銷成本的 $1 翻轉第 \(k\) 個 bit，剩下的 $1 存到第 \(k\) 個 bit 上 → 永遠付得起。</li>
+      </ul>
+      <p class="src">Algo-Lecture-15.pdf p.3–12</p>
+
+      <!-- ===================================================== -->
+      <h2 id="potential">4. Potential Method</h2>
+      <p>借用物理中「位能」的概念：物體在不同狀態有不同的位能（位置越高位能越大）。講義註：Kai 認為 potential method 可以看成 accounting method 的「互補」。</p>
+      <ul>
+        <li>先固定一個<strong>位能函數 \(\Phi\)</strong> 來衡量銀行存款；位能永遠非負 → 銀行不會破產。</li>
+        <li>再依此算出攤銷成本。（相對地，accounting method 是先定攤銷成本，再證明銀行永遠付得起。）</li>
+      </ul>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>符號</th><th>意義</th></tr></thead>
+          <tbody>
+            <tr><td>\(\Phi_i\)</td><td>第 \(i\) 個操作之後的位能</td></tr>
+            <tr><td>\(a_i\)</td><td>第 \(i\) 個操作的實際成本</td></tr>
+            <tr><td>\(\alpha_i\)</td><td>第 \(i\) 個操作的攤銷成本</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>設定 \(\alpha_i\) 使得：</p>
+      \[\alpha_i+\Phi_{i-1}-\Phi_i\ \ge\ a_i\]
+      <p>若 \(\Phi_0=0\)，則任意 \(n\) 個操作後：</p>
+      \[\begin{aligned}
+      \alpha_1+\alpha_2+\cdots+\alpha_n
+      &amp;\ge (a_1+\Phi_1-\Phi_0)+(a_2+\Phi_2-\Phi_1)+\cdots+(a_n+\Phi_n-\Phi_{n-1}) \\
+      &amp;= a_1+a_2+\cdots+a_n+\Phi_n-\Phi_0 \\
+      &amp;\ge a_1+a_2+\cdots+a_n
+      \end{aligned}\]
+
+      <h3 id="pot-stack">Super Stack：\(\Phi\) = stack 中的項目數（\(\Phi_0=0\)）</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>第 \(i\) 個操作</th><th>\(\Phi_{i-1}-\Phi_i\)</th><th>\(a_i\)</th><th>需要</th><th>設定</th></tr></thead>
+          <tbody>
+            <tr><td>Push</td><td>\(-1\)</td><td>1</td><td>\(\alpha_i+(-1)\ge 1\)</td><td>\(\alpha_i=2\)</td></tr>
+            <tr><td>Pop</td><td>\(1\)</td><td>2</td><td>\(\alpha_i+1\ge 2\)</td><td>\(\alpha_i=1\)</td></tr>
+            <tr><td>SuperPop（移除 \(k\) 個）</td><td>\(k\)</td><td>\(1+k\)</td><td>\(\alpha_i+k\ge 1+k\)</td><td>\(\alpha_i=1\)（與 \(k\) 無關）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="pot-counter">Binary Counter：\(\Phi\) = 計數器中 bit 1 的個數（\(\Phi_0=0\)）</h3>
+      <p>第 \(i\) 次 increment 翻轉 \(k\) 個 bits：\(\Phi_{i-1}-\Phi_i=k-2\)、\(a_i=k\)，需要 \(\alpha_i+(k-2)\ge k\) → 設 \(\alpha_i=2\)（與 \(k\) 無關）。</p>
+      <p class="src">Algo-Lecture-15.pdf p.13–22</p>
+
+      <!-- ===================================================== -->
+      <h2 id="compare">5. Accounting vs Potential</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>方法</th><th>優點</th><th>缺點</th></tr></thead>
+          <tbody>
+            <tr><td>Accounting</td><td>比較直觀，可以追蹤金錢流向，看出「困難時期」是怎麼撐過去的</td><td>需要想出好的攤銷成本設計，讓銀行永遠有足夠的錢</td></tr>
+            <tr><td>Potential</td><td>比較機械化：函數一固定，就一定能算出攤銷成本</td><td>不好的函數可能得到很糟的攤銷成本</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Algo-Lecture-15.pdf p.23</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 為什麼 Super Stack 執行 \(n\) 個操作的總時間是 \(O(n)\)，而不是 \(O(n^2)\)？</summary>
+        <div class="answer">
+          <p>所有 SuperPop 移除的項目數不可能超過曾經 push 的項目數，所以總共最多移除 \(n\) 個，SuperPop 總時間 \(O(n)\)；加上 Push、Pop 的 \(O(n)\)，總共 \(O(n)\)。</p>
+          <p class="src">Algo-Lecture-14.pdf p.6</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Binary counter 中，bit \(b_k\) 多久翻轉一次？\(n\) 次 increment 的總成本上界？</summary>
+        <div class="answer">
+          <p>每 \(2^k\) 次操作翻轉一次。總成本 \(\sum\lfloor n/2^k\rfloor &lt; 2n\)。</p>
+          <p class="src">Algo-Lecture-14.pdf p.12–13</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 攤銷成本唯一的要求是什麼？</summary>
+        <div class="answer">
+          <p>對任何操作序列，攤銷成本總和 \(\ge\) 實際成本總和。</p>
+          <p class="src">Algo-Lecture-15.pdf p.5</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 用 accounting method 分析 binary counter 時，銀行的錢綁在哪裡？</summary>
+        <div class="answer">
+          <p>計數器中每個 bit 1 都綁著 $1；翻轉成 0 時就用這 $1 支付。</p>
+          <p class="src">Algo-Lecture-15.pdf p.10–12</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. Potential method 中 \(\alpha_i\) 要滿足什麼條件？為什麼這樣就保證攤銷成本總和 \(\ge\) 實際成本總和？</summary>
+        <div class="answer">
+          <p>\(\alpha_i+\Phi_{i-1}-\Phi_i\ge a_i\)。全部相加後 \(\Phi\) 互相抵消，得到 \(\sum\alpha_i\ge\sum a_i+\Phi_n-\Phi_0\)；而 \(\Phi_0=0\)、\(\Phi_n\ge 0\)，所以 \(\sum\alpha_i\ge\sum a_i\)。</p>
+          <p class="src">Algo-Lecture-15.pdf p.14–16</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-14.pdf</code>　p.1–14（Aggregate Method）</li>
+        <li><code>Algo-Lecture-15.pdf</code>　p.1–23（Accounting Method、Potential Method）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

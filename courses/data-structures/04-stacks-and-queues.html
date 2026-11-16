@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>堆疊與佇列 (Stacks &amp; Queues) · 資料結構</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="data-structures" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">資料結構</a>
+      <span class="sep">/</span>
+      <span class="current">堆疊與佇列 (Stacks &amp; Queues)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>堆疊與佇列 (Stacks &amp; Queues)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>資料結構</dd>
+          <dt>單元</dt><dd>Session 4</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Session4-Stacks and Queues Handout.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">線性結構</span>
+          <span class="tag">運算式</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>Stack</strong>：插入與刪除都在同一端 (top)，<strong>LIFO</strong>；<strong>Queue</strong>：rear 插入、front 刪除，<strong>FIFO</strong>。</li>
+          <li>用 template 寫出通用的容器（Bag）；Stack IS-A Bag，可以用繼承表達。</li>
+          <li><strong>Circular queue</strong>：<code>rear = (rear+1) % capacity</code>；<code>front == rear</code> 表示空，所以要在真的滿之前就配置更多空間。</li>
+          <li><strong>Postfix</strong> 不需要括號、不用管運算子優先順序，用 stack 由左到右掃描一次就能求值。</li>
+          <li>Infix 轉 Postfix：運算元直接輸出，運算子放進 stack，堆疊頂端優先序 ≥ 新運算子時就 pop。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="template-bag">1. Template 與 Bag 容器</h2>
+      <ul>
+        <li><strong>Bag</strong>：可以插入與刪除元素的容器。講義的整數版 Bag 提供 <code>Size</code>、<code>IsEmpty</code>、<code>Element</code>（永遠回傳第一個元素）、<code>Push</code>、<code>Pop</code>（永遠刪除中間的元素）。</li>
+        <li>容量不足時用 <code>ChangeSize1D(array, capacity, 2*capacity)</code> 把容量加倍。</li>
+        <li>用 <code>template&lt;class T&gt;</code> 改寫，就能存放任意型別 <code>T</code>；刪除元素時呼叫解構子 <code>array[top--].~T();</code>。</li>
+      </ul>
+      <h3 id="subtype">Subtype</h3>
+      <ul>
+        <li>繼承用來表達 subtype 關係：Type B 的資料物件 IS-A Type A 的資料物件，B 比 A 更特化（例：Chair IS-A Furniture）。</li>
+        <li>Bag 和 Stack 都是可以插入、刪除元素的資料結構，但 Stack 更特化 → <strong>Stack IS-A Bag</strong>。</li>
+        <li>Bag 的成員函式宣告成 <code>virtual</code>、資料成員宣告成 <code>protected</code>；<code>class Stack : public Bag</code> 只需實作 Bag 沒有的操作（例：<code>Top()</code>）並重新定義 <code>Pop()</code>。</li>
+      </ul>
+      <p class="src">Session4-Stacks and Queues Handout.pdf p.3–8</p>
+
+      <!-- ===================================================== -->
+      <h2 id="stack">2. Stack</h2>
+      <p>Stack 是一個有序串列，插入（addition / push）與刪除（removal / pop）都在同一端進行，這一端稱為 <strong>top</strong>。運作順序為 <strong>Last-In-First-Out (LIFO)</strong>。</p>
+      <pre><span class="pseudo-label">Stack ADT 與 Push / Pop（C++）</span><code>template &lt; class T &gt;
+class Stack // A finite ordered list
+{
+public:
+    Stack (int stackCapacity = 10);  // Constructor
+    bool IsEmpty ( ) const;          // Check if the stack is empty
+    T&amp; Top ( ) const;                // Return the top element
+    void Push (const T&amp; item);       // Insert a new element at top
+    void Pop ( );                    // Delete one element from top
+private:
+    T* stack;
+    int top;   // init. value = -1
+    int capacity;
+};
+
+template &lt; class T &gt;
+void Stack &lt; T &gt;::Push (const T&amp; x)
+{ // Add x to stack
+    if(top == capacity - 1)
+    {
+        ChangeSize1D(stack, capacity, 2*capacity);
+        capacity *= 2;
+    }
+    stack [ ++top ] = x;
+}
+
+template &lt; class T &gt;
+void Stack &lt; T &gt;::Pop ( )
+{ // Delete top element from stack
+    if(IsEmpty()) throw "Stack is empty. Cannot delete.";
+    stack [ top-- ].~T(); // Delete the element
+}</code></pre>
+      <p class="src">Session4-Stacks and Queues Handout.pdf p.10–12</p>
+
+      <!-- ===================================================== -->
+      <h2 id="queue">3. Queue</h2>
+      <p>Queue 是一個有序串列，插入與刪除在<strong>不同端</strong>：新元素從 <strong>rear</strong> 插入、舊元素從 <strong>front</strong> 刪除。運作順序為 <strong>First-In-First-Out (FIFO)</strong>。</p>
+
+      <h3 id="circular-queue">Circular Queue</h3>
+      <ul>
+        <li>把陣列頭尾相接，插入時 <code>rear = (rear+1) % capacity</code>，刪除時 <code>front = (front+1) % capacity</code>。</li>
+        <li><code>front</code> 指向第一個元素的<strong>前一格</strong>，所以 <code>Front()</code> 回傳 <code>queue[(front+1)%capacity]</code>。</li>
+      </ul>
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">易錯：空與滿無法區分</span>
+          <code>rear == front</code> 表示 queue 是空的；但如果把陣列完全填滿，也會出現 <code>rear == front</code>。所以要在 queue 真的滿之前就配置額外空間（Push 時檢查 <code>(rear+1)%capacity == front</code>）。
+        </div>
+      </div>
+      <pre><span class="pseudo-label">Queue 的操作（C++）</span><code>template &lt; class T &gt;
+void Queue &lt; T &gt;::IsEmpty() const { return front==rear; }
+
+template &lt; class T &gt;
+T&amp; Queue &lt; T &gt;::Front() const {
+    if(IsEmpty()) throw "Queue is empty!";
+    return queue[(front+1)%capacity];
+}
+
+template &lt; class T &gt;
+T&amp; Queue &lt; T &gt;::Rear() const {
+    if(IsEmpty()) throw "Queue is empty!";
+    return queue[rear];
+}
+
+template &lt; class T &gt;
+void Queue&lt; T &gt;::Push (const T&amp; x)
+{ // Add x at rear of queue
+    if((rear+1)%capacity == front)
+    {
+        // queue is going to full, double the capacity!
+    }
+    rear = (rear+1)%capacity;
+    queue [rear] = x;
+}
+
+template &lt; class T &gt;
+void Queue &lt; T &gt;::Pop ( )
+{ // Delete front element from queue
+    if(IsEmpty()) throw "Queue is empty. Cannot delete.";
+    front = (front+1)%capacity;
+    queue[front].~T(); // Delete the element
+}</code></pre>
+
+      <h3 id="doubling">容量加倍</h3>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：capacity = 8，內容 C D E F G _ A B（front = 5，rear = 4）</span>
+          容量加倍到 16 後，元素必須重新排列才能維持環狀順序：
+          <ul>
+            <li><strong>Scenario 1</strong>：把右段（A、B）移到新陣列的最右邊 → front = 13，rear = 4</li>
+            <li><strong>Scenario 2</strong>：另一種排列方式 → front = 15，rear = 6</li>
+          </ul>
+        </div>
+      </div>
+      <p class="src">Session4-Stacks and Queues Handout.pdf p.14–26</p>
+
+      <!-- ===================================================== -->
+      <h2 id="expressions">4. 運算式求值</h2>
+      <ul>
+        <li>運算式由<strong>運算子</strong>（+、-、*、/…）與<strong>運算元</strong>（A、B、C…）組成；執行順序可能影響最終結果。</li>
+        <li>求值規則：運算子有優先順序，高的先算；同優先順序<strong>由左到右</strong>；單元運算子<strong>由右到左</strong>。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>C++ 優先順序</th><th>運算子</th></tr></thead>
+          <tbody>
+            <tr><td>1（最高）</td><td>Minus（負號）、<code>!</code></td></tr>
+            <tr><td>2</td><td><code>*</code>、<code>/</code>、<code>%</code></td></tr>
+            <tr><td>3</td><td><code>+</code>、<code>-</code></td></tr>
+            <tr><td>4</td><td><code>&lt;</code>、<code>&lt;=</code>、<code>&gt;=</code>、<code>&gt;</code></td></tr>
+            <tr><td>5</td><td><code>==</code>、<code>!=</code></td></tr>
+            <tr><td>6</td><td><code>&amp;&amp;</code></td></tr>
+            <tr><td>7（最低）</td><td><code>||</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="postfix">Infix 與 Postfix</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>表示法</th><th>說明</th><th>例子</th></tr></thead>
+          <tbody>
+            <tr><td>Infix</td><td>運算子在兩個運算元中間；用程式求值很困難</td><td><code>A+B*C</code></td></tr>
+            <tr><td>Postfix</td><td>每個運算子都在它的運算元之後</td><td><code>ABC*+</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Postfix 的優點</span>
+          不需要括號；運算子優先順序不再重要；可以有效率地求值：由左到右掃描，遇到運算元就 push 進 stack，遇到運算子就 pop 出兩個元素計算，再把結果 push 回 stack。
+        </div>
+      </div>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子</span>
+          Infix <code>A+B–C</code> → Postfix <code>A B + C –</code>，代入 A = 4、B = 3、C = 2，依上述規則用 stack 求值。
+        </div>
+      </div>
+      <pre><span class="pseudo-label">Eval（講義 pseudocode）</span><code>void Eval(Expression e)
+{  // Assume the last token of e is '#'
+   // A function NextToken is used to get next token in e
+    Stack&lt;Token&gt; stack; // initialize stack
+    for (Token x = NextToken(e); x != '#'; x = NextToken(e)){
+        if(x is an operand) stack.Push(x);
+        else{
+            // Remove the correct number of operands from stack
+            // Perform the evaluation
+            // Push the result back to stack
+            // ***Try to fill up the codes by your own***
+        }
+    }
+};</code></pre>
+
+      <h3 id="infix-to-postfix">Infix 轉 Postfix</h3>
+      <p><strong>方法 1：Fully parenthesize</strong></p>
+      <ol>
+        <li>把運算式完全加上括號，例：<code>((((A / B) – C) + (D * E)) – (A * C))</code></li>
+        <li>把每個運算子移到它對應的右括號位置</li>
+        <li>刪除所有括號</li>
+      </ol>
+      <p><strong>方法 2：更聰明的演算法（只掃描一次，使用 stack）</strong></p>
+      <ul>
+        <li>運算元的順序不變：看到運算元就直接輸出。</li>
+        <li>用 stack 存放看到的運算子，在適當時機 pop 出來：當 stack 頂端運算子的優先序<strong>高於或等於</strong>新進來的運算子時就 pop（left-to-right associativity）。</li>
+        <li>有括號時：<code>(</code> 的優先序最高，一律 push 進 stack；push 進去之後 <code>(</code> 變成最低優先序；遇到 <code>)</code> 時一直 pop 運算子，直到遇到對應的 <code>(</code>。</li>
+      </ul>
+      <p>（講義 p.38 以 <code>A + B * C</code> 逐步示範 Next token / Stack / Output 的變化。）</p>
+      <p class="src">Session4-Stacks and Queues Handout.pdf p.28–39</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. Stack 和 Queue 的運作順序分別是什麼？</summary>
+        <div class="answer">
+          <p>Stack 是 LIFO（插入刪除都在 top）；Queue 是 FIFO（rear 插入、front 刪除）。</p>
+          <p class="src">Session4-Stacks and Queues Handout.pdf p.10, p.14</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 為什麼說 Stack IS-A Bag？</summary>
+        <div class="answer">
+          <p>兩者都是可以插入和刪除元素的資料結構，但 Stack 更特化，所以可以用繼承表達這個 subtype 關係。</p>
+          <p class="src">Session4-Stacks and Queues Handout.pdf p.7</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. Circular queue 為什麼要在真正滿之前就擴充？</summary>
+        <div class="answer">
+          <p>因為用 <code>front == rear</code> 判斷空；若完全填滿，也會變成 <code>front == rear</code>，無法區分空與滿。</p>
+          <p class="src">Session4-Stacks and Queues Handout.pdf p.19</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. Postfix 表示法有哪些優點？</summary>
+        <div class="answer">
+          <p>不需要括號、不用考慮運算子優先順序，可以由左到右掃描一次、用 stack 有效率地求值。</p>
+          <p class="src">Session4-Stacks and Queues Handout.pdf p.33</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. Infix 轉 Postfix 時，遇到 <code>(</code> 和 <code>)</code> 要怎麼處理？</summary>
+        <div class="answer">
+          <p><code>(</code> 優先序最高，一律 push；push 後變成最低優先序。遇到 <code>)</code> 時一直 pop 運算子，直到遇到對應的 <code>(</code>。</p>
+          <p class="src">Session4-Stacks and Queues Handout.pdf p.39</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Session4-Stacks and Queues Handout.pdf</code>　p.1–39（Yi-Shin Chen, Data Structures）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

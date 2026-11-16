@@ -1,0 +1,7 @@
+# 原始 PDF（含講義版權內容），不上傳
+note/
+
+# 系統檔
+.DS_Store
+Thumbs.db
+desktop.ini

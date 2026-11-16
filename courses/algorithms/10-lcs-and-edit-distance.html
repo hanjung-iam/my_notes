@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>最長共同子序列與編輯距離 · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">最長共同子序列與編輯距離</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>最長共同子序列與編輯距離 (LCS &amp; Edit Distance)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 10</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-10.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">動態規劃</span>
+          <span class="tag">字串</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>Subsequence</strong>：從字串刪掉一些字元、剩下的依序接起來；兩字串都有的 subsequence 稱為 <strong>common subsequence</strong>。</li>
+          <li>LLCS 遞迴：最後字元相同 → \(1+\) 兩者都去掉最後一字；不同 → 取「去掉 \(S\) 最後一字」與「去掉 \(T\) 最後一字」的最大值。</li>
+          <li>填表求 LLCS：\(O(nm)\) 個值、每個 \(O(1)\) → 總時間 \(O(nm)\)。</li>
+          <li>填表時順便記錄每格「從哪一格來」，最後 <strong>backtrack</strong> 就能找出一個 LCS。</li>
+          <li>只求長度時，逐列填表可將空間降到 \(O(m)\)；Hirschberg (1975) 讓求 LCS 本身也只需 \(O(\min\{n,m\})\) 空間。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="definition">1. 定義</h2>
+      <ul>
+        <li><strong>Subsequence</strong>：從字串 \(S\) 刪除一些字元，再把剩下的字元依序接起來。
+          <br>例：\(S\) = abracadabra → “radar” 是 \(S\) 的 subsequence；\(S\) 本身也是。</li>
+        <li><strong>Common subsequence</strong>：字串 \(W\) 同時是 \(S\) 和 \(T\) 的 subsequence。
+          <br>例：\(S\) = dirtyroom、\(T\) = dormitory → “dry” 是 common subsequence。</li>
+        <li><strong>LCS (Longest Common Subsequence)</strong>：給定 \(S[1..n]\) 與 \(T[1..m]\)，最長的 common subsequence。</li>
+      </ul>
+      <p>做法：先用 DP 求出 LCS 的<strong>長度</strong>，再用 <strong>backtracking</strong> 輸出一個 LCS。</p>
+      <p class="src">Algo-Lecture-10.pdf p.3–5</p>
+
+      <!-- ===================================================== -->
+      <h2 id="llcs">2. 求 LCS 的長度</h2>
+      <p>倒著想。令 \(\text{LLCS}(X,Y)\) = 字串 \(X\) 和 \(Y\) 的 LCS 長度，目標是 \(\text{LLCS}(S,T)\)。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>情況</th><th>推論</th><th>LLCS(S, T)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>\(S[n]=T[m]\)（同為 \(c\)）</td>
+              <td>一定存在某個以 \(c\) 結尾的 LCS → 把 \(S[n]\) 和 \(T[m]\) 配對，再求剩下的 LCS</td>
+              <td>\(1+\text{LLCS}(S[1..n-1],T[1..m-1])\)</td>
+            </tr>
+            <tr>
+              <td>\(S[n]\ne T[m]\)</td>
+              <td>LCS 不以 \(S[n]\) 結尾，或不以 \(T[m]\) 結尾；不知道是哪一種，但取最大值一定正確</td>
+              <td>\(\max\{\text{LLCS}(S[1..n-1],T[1..m]),\ \text{LLCS}(S[1..n],T[1..m-1])\}\)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">一般化</span>
+          對任何 \(i,j\)，\(\text{LLCS}(S[1..i],T[1..j])\) 可以由
+          \(\text{LLCS}(S[1..i-1],T[1..j-1])\)、\(\text{LLCS}(S[1..i-1],T[1..j])\)、\(\text{LLCS}(S[1..i],T[1..j-1])\)
+          算出，取決於 \(S[i]\) 和 \(T[j]\) 是否相同。
+        </div>
+      </div>
+
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：S = dirtyroom，T = dormitory 的 LLCS 表</span>
+          <p>Step 1 先把第 0 列、第 0 行填 0；Step 2 再逐列 (\(i=1,2,\dots\)) 填入。</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th></th><th></th><th>D</th><th>O</th><th>R</th><th>M</th><th>I</th><th>T</th><th>O</th><th>R</th><th>Y</th></tr>
+              </thead>
+              <tbody>
+                <tr><td></td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+                <tr><td>D</td><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+                <tr><td>I</td><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td></tr>
+                <tr><td>R</td><td>0</td><td>1</td><td>1</td><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td><td>3</td><td>3</td></tr>
+                <tr><td>T</td><td>0</td><td>1</td><td>1</td><td>2</td><td>2</td><td>2</td><td>3</td><td>3</td><td>3</td><td>3</td></tr>
+                <tr><td>Y</td><td>0</td><td>1</td><td>1</td><td>2</td><td>2</td><td>2</td><td>3</td><td>3</td><td>3</td><td>4</td></tr>
+                <tr><td>R</td><td>0</td><td>1</td><td>1</td><td>2</td><td>2</td><td>2</td><td>3</td><td>3</td><td>4</td><td>4</td></tr>
+                <tr><td>O</td><td>0</td><td>1</td><td>2</td><td>2</td><td>2</td><td>2</td><td>3</td><td>4</td><td>4</td><td>4</td></tr>
+                <tr><td>O</td><td>0</td><td>1</td><td>2</td><td>2</td><td>2</td><td>2</td><td>3</td><td>4</td><td>4</td><td>4</td></tr>
+                <tr><td>M</td><td>0</td><td>1</td><td>2</td><td>2</td><td>3</td><td>3</td><td>3</td><td>4</td><td>4</td><td>4</td></tr>
+              </tbody>
+            </table>
+          </div>
+          右下角的值 = LCS 長度 = <strong>4</strong>。（講義原圖的列是由下往上排，這裡改為由上往下。）
+        </div>
+      </div>
+
+      <p>時間：所有 \(i,j\) 共 \(O(nm)\) 個值，每個 \(O(1)\) → 總時間 \(O(nm)\)。</p>
+      <p class="src">Algo-Lecture-10.pdf p.6–16</p>
+
+      <!-- ===================================================== -->
+      <h2 id="backtracking">3. 找出 LCS 本身：Backtracking</h2>
+      <ul>
+        <li>填 LLCS 表時，額外記錄每一格 \(\text{LLCS}(S[1..i],T[1..j])\) 是怎麼算出來的：
+          <ul>
+            <li>來自 \(\text{LLCS}(S[1..i-1],T[1..j-1])\)？</li>
+            <li>來自 \(\text{LLCS}(S[1..i],T[1..j-1])\)？</li>
+            <li>來自 \(\text{LLCS}(S[1..i-1],T[1..j])\)？</li>
+          </ul>
+        </li>
+        <li>得到 \(\text{LLCS}(S,T)\) 之後，從右下角那一格開始，依這些資訊往回追 (backtrack)，就能取出一個 LCS。</li>
+      </ul>
+      <p class="src">Algo-Lecture-10.pdf p.17–21</p>
+
+      <!-- ===================================================== -->
+      <h2 id="space">4. 節省空間</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>目標</th><th>方法</th><th>額外空間</th></tr></thead>
+          <tbody>
+            <tr><td>LLCS（基本做法）</td><td>整張表</td><td>\(O(nm)\)</td></tr>
+            <tr><td>只求 LLCS</td><td>逐列填表，每列只依賴正上方那一列</td><td>\(O(m)\)（講義提問：能否只用 \(O(\min\{n,m\})\)？）</td></tr>
+            <tr><td>求 LCS 本身</td><td>Hirschberg (1975)</td><td>\(O(\min\{n,m\})\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Hirschberg 的想法</strong>：找出把 \(T\) 切成兩段的最好方式，使第一段對應 \(S\) 的前半、第二段對應 \(S\) 的後半，再遞迴處理。</p>
+      <p class="src">Algo-Lecture-10.pdf p.22–23</p>
+
+      <!-- ===================================================== -->
+      <h2 id="edit-distance">5. 編輯距離 (Edit Distance)</h2>
+      <p>給定 \(S[1..n]\) 和 \(T[1..m]\)，用一連串字元編輯操作把 \(S\) 轉成 \(T\)，求<strong>最少的操作次數</strong>。編輯操作有三種：</p>
+      <ol>
+        <li><strong>Replace</strong>：把 \(S\) 的某個字元換成任意其他字元</li>
+        <li><strong>Insert</strong>：在 \(S\) 的某個位置插入一個字元</li>
+        <li><strong>Delete</strong>：從 \(S\) 刪除一個字元</li>
+      </ol>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：S = practical，T = factual</span>
+          可以用 4 次編輯操作把 \(S\) 轉成 \(T\)，對齊方式如下：
+          <pre><code>S = practical
+T = f_actu_al</code></pre>
+        </div>
+      </div>
+      <p>解法：把 LCS 的方法稍微修改即可。講義留為習題：能否在 \(O(nm)\) 時間解出？能否只用 \(O(\min\{n,m\})\) 空間？</p>
+      <p class="src">Algo-Lecture-10.pdf p.24–26</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 當 \(S[n]=T[m]\) 時，\(\text{LLCS}(S,T)\) 等於什麼？</summary>
+        <div class="answer">
+          <p>\(1+\text{LLCS}(S[1..n-1],T[1..m-1])\)。</p>
+          <p class="src">Algo-Lecture-10.pdf p.7</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 當 \(S[n]\ne T[m]\) 時，為什麼可以直接取 max？</summary>
+        <div class="answer">
+          <p>LCS 要嘛不以 \(S[n]\) 結尾、要嘛不以 \(T[m]\) 結尾；雖然不知道是哪一種，但取兩種情況的最大值永遠是正確的。</p>
+          <p class="src">Algo-Lecture-10.pdf p.8–9</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 求 LLCS 的時間複雜度？只求長度時空間可以降到多少？</summary>
+        <div class="answer">
+          <p>時間 \(O(nm)\)。逐列填表，每列只依賴上一列，空間可降到 \(O(m)\)。</p>
+          <p class="src">Algo-Lecture-10.pdf p.16, p.22</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 要輸出一個 LCS（不只是長度），填表時需要多記錄什麼？</summary>
+        <div class="answer">
+          <p>記錄每一格的值是由哪一格（左上、左、上）算出來的，最後從終點 backtrack 回去。</p>
+          <p class="src">Algo-Lecture-10.pdf p.17</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. Edit distance 允許哪三種編輯操作？</summary>
+        <div class="answer">
+          <p>Replace（換掉一個字元）、Insert（插入一個字元）、Delete（刪除一個字元）。</p>
+          <p class="src">Algo-Lecture-10.pdf p.24</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-10.pdf</code>　p.1–26（CS 4311 Introduction to Algorithms, Lecture 10）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

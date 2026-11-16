@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<!--
+  筆記頁模板（結構見 CLAUDE.md 第 7 節）
+  使用方式：複製到 courses/<課程slug>/NN-<筆記slug>.html，替換所有 {{...}}。
+  - 目錄由 main.js 依照 <h2 id> / <h3 id> 自動產生，不用手寫；每個 id 必須唯一（英文小寫、用 - 連接）。
+  - 課程圖示由 main.js 依 data-course 自動放入 #note-icon。
+  - 數學公式：行內用 \( ... \)，獨立一行用 \[ ... \]。
+  - 不可使用 inline style 或 <style>。
+-->
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{NOTE_TITLE}} · {{COURSE_NAME}}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="{{COURSE_SLUG}}" data-root="../../">
+
+  <!-- 1. 麵包屑 -->
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">{{COURSE_NAME}}</a>
+      <span class="sep">/</span>
+      <span class="current">{{NOTE_TITLE}}</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <!-- 2. 頁首 -->
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>{{NOTE_TITLE}}</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>{{COURSE_NAME}}</dd>
+          <dt>單元</dt><dd>{{UNIT}}</dd>
+          <dt>整理日期</dt><dd>{{YYYY-MM-DD}}</dd>
+          <dt>來源</dt><dd><code>{{檔名.pdf}}</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">{{標籤}}</span>
+        </div>
+      </header>
+
+      <!-- 3. 重點摘要 -->
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>{{最重要的重點，3–5 條}}</li>
+        </ul>
+      </div>
+
+      <!-- 4. 知識點（每個知識點一個 h2，可用 h3 分小節） -->
+      <h2 id="{{section-id}}">1. {{知識點標題}}</h2>
+      <p>{{內容}}</p>
+
+      <!-- 提醒框：key=💡重點 / warn=❗易錯 / example=📝例子 / check=⚠️待確認 -->
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body"><span class="callout-title">重點</span>{{內容}}</div>
+      </div>
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body"><span class="callout-title">易錯</span>{{內容}}</div>
+      </div>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body"><span class="callout-title">例子</span>{{內容}}</div>
+      </div>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body"><span class="callout-title">待確認</span>{{看不清楚 / 衝突的內容，並列各方說法}}</div>
+      </div>
+
+      <!-- Pseudocode（只照來源轉錄） -->
+      <pre><span class="pseudo-label">Pseudocode</span><code>{{照來源轉錄}}</code></pre>
+
+      <!-- 表格 -->
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>{{欄位}}</th><th>{{欄位}}</th></tr></thead>
+          <tbody><tr><td>{{內容}}</td><td>{{內容}}</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- 每個知識點末尾都要標註來源 -->
+      <p class="src">{{檔名.pdf}} p.{{頁碼}}</p>
+
+      <!-- 5. 自我測驗 -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. {{題目}}</summary>
+        <div class="answer">
+          <p>{{答案}}</p>
+          <p class="src">{{檔名.pdf}} p.{{頁碼}}</p>
+        </div>
+      </details>
+
+      <!-- 6. 來源清單 -->
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>{{檔名.pdf}}</code>　p.{{起}}–{{迄}}</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>圖 (Graphs) · 資料結構</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="data-structures" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">資料結構</a>
+      <span class="sep">/</span>
+      <span class="current">圖 (Graphs)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>圖 (Graphs)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>資料結構</dd>
+          <dt>單元</dt><dd>Session 7</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Session7-Graphs_240508_093837.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">圖論</span>
+          <span class="tag">最短路徑</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>\(n\) 個頂點的圖最多 \(n(n-1)/2\)（無向）或 \(n(n-1)\)（有向）條邊；表示法有 <strong>adjacency matrix</strong> 與 <strong>adjacency lists</strong>。</li>
+          <li><strong>DFS</strong> 用 stack（或遞迴）、<strong>BFS</strong> 用 queue；用 adjacency lists 時為 \(O(n+e)\)，用 adjacency matrix 時為 \(O(n^2)\)。</li>
+          <li>最小生成樹 (MST) 的三個 greedy 演算法：<strong>Kruskal</strong> \(O(e\log e)\)、<strong>Prim</strong> \(O(n^2)\)、<strong>Sollin</strong>。</li>
+          <li>最短路徑：單一起點用 <strong>Dijkstra</strong>（邊權非負）；所有點對用 <strong>Floyd-Warshall</strong>（DP，\(A^k[i][j]=\min\{A^{k-1}[i][j],A^{k-1}[i][k]+A^{k-1}[k][j]\}\)）。</li>
+          <li>AOV network 用 <strong>topological order</strong> 排出活動順序：反覆挑出沒有 predecessor（in-degree 為 0）的頂點。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="concept">1. 圖的基本概念</h2>
+      <p>最早的記錄是 1736 年的 <strong>Königsberg 七橋問題</strong>（每座橋恰好走一次），由 Euler 解決：把問題表示成圖，可以走完 iff 每個頂點的 degree 都是偶數。</p>
+      <ul>
+        <li><strong>Graph</strong> \(G=(V,E)\)：\(V\) 為頂點集合、\(E\) 為邊集合。</li>
+        <li><strong>Undirected graph</strong>：邊 \((u,v)\) 沒有方向。</li>
+        <li><strong>Directed graph</strong>：\(\langle u,v\rangle\ne\langle v,u\rangle\)；\(\langle u,v\rangle\) 中 \(u\) 是 tail、\(v\) 是 head。</li>
+        <li>限制：不允許 self edge / self loop（\((v,v)\)、\(\langle v,v\rangle\)）；同一條邊不能出現多次（那是 multigraph）。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>術語</th><th>定義</th></tr></thead>
+          <tbody>
+            <tr><td>最多邊數</td><td>無向：\(n(n-1)/2\)；有向：\(n(n-1)\)</td></tr>
+            <tr><td>Complete graph</td><td>恰好有上述最多邊數的圖</td></tr>
+            <tr><td>Adjacent / Incident</td><td>\((u,v)\in E\) 時 \(u\)、\(v\) 相鄰，邊 \((u,v)\) incident on \(u\) 和 \(v\)；\(\langle u,v\rangle\) 時 \(u\) is adjacent <strong>to</strong> \(v\)、\(v\) is adjacent <strong>from</strong> \(u\)</td></tr>
+            <tr><td>Subgraph</td><td>\(V(G')\subseteq V(G)\) 且 \(E(G')\subseteq E(G)\)</td></tr>
+            <tr><td>Path</td><td>頂點序列 \(u,i_1,\dots,i_k,v\)，相鄰兩點之間都有邊</td></tr>
+            <tr><td>Simple path</td><td>所有頂點都不同的 path（第一個和最後一個可以相同）</td></tr>
+            <tr><td>Cycle</td><td>第一個與最後一個頂點相同的 simple path</td></tr>
+            <tr><td>Connected</td><td>無向圖中每一對相異頂點之間都有 path</td></tr>
+            <tr><td>Connected component</td><td>極大的 connected subgraph</td></tr>
+            <tr><td>Tree</td><td>connected 且 acyclic 的圖</td></tr>
+            <tr><td>Strongly connected</td><td>有向圖中每一對相異頂點之間都有 directed path</td></tr>
+            <tr><td>Strongly connected component</td><td>極大的 strongly connected subgraph</td></tr>
+            <tr><td>Degree</td><td>無向圖：節點連到的邊數。有向圖：in-degree（指進來的邊數）+ out-degree（指出去的邊數）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Session7-Graphs_240508_093837.pdf p.3–18</p>
+
+      <!-- ===================================================== -->
+      <h2 id="representation">2. 圖的表示法</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>表示法</th><th>做法</th><th>特性</th></tr></thead>
+          <tbody>
+            <tr><td>Adjacency matrix</td><td>二維陣列，\(a[i][j]=1\) iff 邊 \((i,j)\) 或 \(\langle i,j\rangle\) 在 \(E(G)\)</td><td>圖很稀疏時浪費記憶體</td></tr>
+            <tr><td>Adjacency lists</td><td>每個頂點用一條 chain 串起它的相鄰頂點</td><td>有向圖中 list 長度 = out-degree</td></tr>
+            <tr><td>Inverse adjacency lists</td><td>有向圖中，每個頂點串起 adjacent <strong>from</strong> 的頂點</td><td>list 長度 = in-degree</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><strong>Weighted edges</strong>：邊可以帶權重（例如距離、成本），在每條邊多加一個欄位存權重；有權重的圖稱為 <strong>network</strong>。</li>
+        <li>Graph ADT 以抽象 class 定義 <code>Degree</code>、<code>ExistsEdge</code>、<code>InsertVertex</code>、<code>InsertEdge</code>、<code>DeleteVertex</code>、<code>DeleteEdge</code> 等純虛擬函式；<code>LinkedGraph</code> 以 <code>Chain&lt;int&gt; *adjLists</code> 實作。操作與表示法無關，用 iterator 走訪相鄰頂點。</li>
+      </ul>
+      <p class="src">Session7-Graphs_240508_093837.pdf p.20–27</p>
+
+      <!-- ===================================================== -->
+      <h2 id="traversal">3. DFS 與 BFS</h2>
+      <h3 id="dfs">Depth-First Search (DFS)</h3>
+      <ul>
+        <li>從頂點 \(v\) 開始：拜訪 \(v\)；對每個與 \(v\) 相鄰且未拜訪的 \(w\)，遞迴 DFS(\(w\))。</li>
+        <li>若到達某頂點 \(u\)，其相鄰頂點都已拜訪，就退回上一個拜訪的頂點。</li>
+        <li>當已拜訪的頂點都無法再到達未拜訪的頂點時結束。</li>
+      </ul>
+      <pre><span class="pseudo-label">Recursive DFS（C++）</span><code>void Graph::DFS(const int v){
+    // visit all previously unvisited vertices that are adjacent to v
+    output(v);
+    visited[v]=true;
+    for(each vertex w adjacent to v)
+        if(!visited[w]) DFS(w);
+}</code></pre>
+      <p>非遞迴版本改用 stack：pop 出頂點，若未拜訪就輸出、標記，並把所有未拜訪的相鄰頂點 push 進 stack。講義範例的一種 DFS 順序為 0 1 3 7 4 5 2 6（還有其他可能）。</p>
+
+      <h3 id="bfs">Breadth-First Search (BFS)</h3>
+      <p>從頂點 \(v\) 開始：拜訪 \(v\)，再拜訪所有與 \(v\) 相鄰的未拜訪頂點，接著拜訪與這些新頂點相鄰的未拜訪頂點…（生活例子：網路廣播、社群網路中先認識朋友的朋友）</p>
+      <pre><span class="pseudo-label">BFS（C++）</span><code>void Graph::BFS(int v){
+    visited = new bool[n]; // this is a data member of Graph
+    fill(visited, visited+n, false);
+    Queue&lt;int&gt; q;          // declare and init a queue
+    q.Push(v);
+    visited[v]=true;
+    while(!q.IsEmpty()){
+        v = q.Front(); q.Pop();
+        output(v);
+        for(each vertex w adjacent to v){
+            if(!visited[w]){
+                q.Push(w);
+                visited[w]=true; }
+        }
+    }
+    delete [] visited;
+}</code></pre>
+      <p>講義範例的 BFS 順序為 0 1 2 3 4 5 6 7。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>DFS / BFS 的時間</th><th>分析</th><th>結果</th></tr></thead>
+          <tbody>
+            <tr><td>Adjacency matrix</td><td>找出一個頂點的所有相鄰頂點要 \(O(n)\)，最多拜訪 \(n\) 個頂點</td><td>\(O(n^2)\)</td></tr>
+            <tr><td>Adjacency lists</td><td>共有 \(n+2e\) 個 chain 節點，每個最多檢查一次</td><td>\(O(n+e)\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="components">Connected Components 與 Spanning Trees</h3>
+      <ul>
+        <li><strong>判斷是否 connected</strong>：呼叫一次 DFS 或 BFS，看是否還有未拜訪的頂點。</li>
+        <li><strong>找出所有 connected components</strong>：重複呼叫 DFS 或 BFS，每次從一個未拜訪頂點開始，每次呼叫輸出一個 component。</li>
+        <li><strong>Spanning tree</strong>：只用 \(E(G)\) 中的邊、包含 \(V(G)\) 所有頂點的樹；有 \(n-1\) 條樹邊，加入任何一條非樹邊都會形成 cycle。</li>
+        <li>走訪時經過的邊就是樹邊 → DFS spanning tree、BFS spanning tree。</li>
+      </ul>
+      <p>講義自學主題：sequential lists、adjacency multilists、biconnected components。</p>
+      <p class="src">Session7-Graphs_240508_093837.pdf p.29–42</p>
+
+      <!-- ===================================================== -->
+      <h2 id="mst">4. 最小生成樹 (Minimum-Cost Spanning Tree)</h2>
+      <p>對有權重的無向圖，找出邊權總和最小的 spanning tree。三個 greedy 演算法：</p>
+
+      <h3 id="kruskal">Kruskal's Algorithm</h3>
+      <p>想法：每次加入一條成本最小的邊；若會形成 cycle 就丟掉；直到有 \(n-1\) 條邊。</p>
+      <pre><span class="pseudo-label">Kruskal's algorithm</span><code>1. T = ψ
+2. While((T contains less than n-1 edges)&amp;&amp;(E is not empty)){
+3.     choose an edge (v,w) from E of lowest cost;
+4.     delete (v,w) from E
+5.     if((v,w) does not create a cycle) add (v,w) to T;
+6.     else discard (v,w)
+7. }
+8. If(T contains less than n-1 edges)
+9.     cout &lt;&lt; "there is no spanning tree!" &lt;&lt;endl;</code></pre>
+      <ul>
+        <li>Step 3、4：用 <strong>min heap</strong> 存邊的成本，\(O(\log e)\)。</li>
+        <li>Step 5：用<strong>集合表示法</strong>（Session 6 的 disjoint sets）把同一 connected component 的頂點放在同一集合；要加入的邊 \((v,w)\) 兩端若在同一集合就丟掉，否則合併兩集合，\(O(\log e)\)。</li>
+        <li>最多執行 \(e-1\) 輪：\((e-1)(\log e+\log e)=O(e\log e)\)。</li>
+      </ul>
+
+      <h3 id="prim">Prim's Algorithm</h3>
+      <p>想法：選出的邊永遠形成一棵樹。從只含任一頂點的樹 \(T\) 開始，每次加入一條成本最小、且加入後 \(T\cup\{(u,v)\}\) 仍是樹的邊，直到 \(T\) 有 \(n-1\) 條邊。</p>
+      <pre><span class="pseudo-label">Prim's algorithm</span><code>1. V(T) = {0} // start with vertex 0
+2. for(T=ψ ; T contains less than n-1 edges; add (u,v) to T){
+3.     Let (u,v) be a least cost edge such that u ∈ V(T) and v ∉ V(T);
+4.     if(there is no such edge) break;
+5.     add v to V(T);
+6. }
+7. If(T contains fewer than n-1 edges)
+8.     cout &lt;&lt; "there is no spanning tree!" &lt;&lt;endl;</code></pre>
+      <ul>
+        <li>Step 3 用 <strong>near-to-tree</strong> 陣列記錄每個不在 \(V(T)\)、但與 \(T\) 相鄰的頂點到 \(T\) 的最近距離 → \(O(n)\)。</li>
+        <li>最多執行 \(n\) 輪：\(O(n^2)\)。</li>
+        <li>講義範例加入頂點的順序：0 → 5 → 4 → 3 → 2 → 1 → 6，得到成本 99 的 spanning tree。</li>
+      </ul>
+
+      <h3 id="sollin">Sollin's (Borůvka's) Algorithm</h3>
+      <p>想法：每個階段選出多條邊。</p>
+      <ol>
+        <li>從 \(n\) 棵樹（每個頂點自成一棵）組成的 forest 開始</li>
+        <li>每棵樹各選一條成本最小的邊</li>
+        <li>刪除重複選到的邊；若兩條相同成本的邊連接同樣兩棵樹，只保留一條</li>
+        <li>重複直到只剩一棵樹</li>
+      </ol>
+      <p class="src">Session7-Graphs_240508_093837.pdf p.44–52</p>
+
+      <!-- ===================================================== -->
+      <h2 id="shortest-paths">5. 最短路徑 (Shortest Paths)</h2>
+      <h3 id="dijkstra">單一起點：Dijkstra's Algorithm</h3>
+      <p>給定邊權<strong>非負</strong>的有向圖與起點 \(v\)，求 \(v\) 到其他每個頂點的最短路徑。</p>
+      <ul>
+        <li>集合 \(S\)：已找到最短路徑的頂點。</li>
+        <li>陣列 dist：起點到各頂點目前的最短距離；拜訪新頂點時更新：
+          \[\text{dist}[w]=\min\{\text{dist}[u]+\text{length}(u,w),\ \text{dist}[w]\}\]
+        </li>
+      </ul>
+      <pre><span class="pseudo-label">ShortestPath（C++）</span><code>void MatrixWDigraph::ShortestPath(const int n, const int v)
+{ // dist[j], 0 ≤ j &lt; n, stores the shortest path from v to j
+  // length[i][j] stores length of edge &lt;i, j&gt;
+    for(int i=0; i&lt;n ; i++){ s[i]=false; dist[i]=length[v][i];}
+    s[v] = true;
+    dist[v] = 0;
+    // find n − 1 paths starting from v
+    for(int i=0; i&lt;n-1 ;i++){
+        // Choose a vertex u, such that dist[u]
+        // is minimum and s[u] = false
+        int u = Choose(n);
+        s[u] = true;
+        for(int w=0; w&lt;n; w++)
+            if(!s[w] &amp;&amp; dist[u] + length[u][w] &lt; dist[w])
+                dist[w] = dist[u] + length[u][w];
+    }
+}</code></pre>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：從頂點 0 出發的最短路徑</span>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Path</th><th>Length</th></tr></thead>
+              <tbody>
+                <tr><td>0, 3</td><td>10</td></tr>
+                <tr><td>0, 3, 4</td><td>25</td></tr>
+                <tr><td>0, 3, 4, 1</td><td>45</td></tr>
+                <tr><td>0, 2</td><td>45</td></tr>
+              </tbody>
+            </table>
+          </div>
+          拜訪順序：{0} → {0, 3} → {0, 3, 4} → {0, 3, 4, 1} → {0, 3, 4, 1, 2}
+        </div>
+      </div>
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">負權重的邊</span>
+          講義 p.58：此演算法可能可以用在含負成本邊的有向圖，但限制是有向圖<strong>不能有負長度的 cycle</strong>。（講義自學主題：處理負邊的 Bellman-Ford 演算法。）
+        </div>
+      </div>
+
+      <h3 id="floyd-warshall">所有點對：Floyd-Warshall's Algorithm</h3>
+      <p>可以對 \(n\) 個頂點各做一次單一起點最短路徑，或用 Floyd-Warshall（<strong>dynamic programming</strong>）。</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Dynamic Programming</span>
+          Divide-and-conquer 的一種，通常用在最佳化問題；改善「同樣的遞迴呼叫被重複執行」的低效率，適用於子問題共享子子問題時。「Programming」指的是<strong>表格法</strong>：記住解答，並由下而上 (bottom-up) 計算。
+        </div>
+      </div>
+      <ul>
+        <li>\(A^{-1}[i][j]\) = length[\(i\)][\(j\)]</li>
+        <li>\(A^k[i][j]\) = 從 \(i\) 到 \(j\)、中間頂點編號都不大於 \(k\) 的最短路徑長度</li>
+        <li>\(A^{n-1}[i][j]\) = 圖中 \(i\) 到 \(j\) 的最短路徑長度</li>
+      </ul>
+      \[A^k[i][j]=\min\{A^{k-1}[i][j],\ A^{k-1}[i][k]+A^{k-1}[k][j]\},\quad k\ge 0\]
+      <p>直覺：\(A^k[i][j]\) 只有兩種可能 — 路徑<strong>不經過</strong>第 \(k\) 個頂點，或<strong>經過</strong>第 \(k\) 個頂點。</p>
+      <pre><span class="pseudo-label">AllLengths（C++）</span><code>void MatrixWDigraph::AllLengths(const int n)
+{ // length[n][n] stores edge length between adjacent vertices
+  // a[i][j] stores the shortest path from i to j
+    for (int i = 0; i&lt;n; i++)
+        for (int j = 0; j&lt;n; j++)
+            a[i][j]= length[i][j];          // A^-1
+
+    // path with top vertex index k
+    for (int k= 0; k&lt;n; k++)                // A^0 ~ A^(n-1)
+        // all other possible vertices
+        for (int i= 0; i&lt;n; i++)
+            for (int j= 0; j&lt;n; j++)
+                if((a[i][k]+a[k][j])&lt;a[i][j])
+                    a[i][j] = a[i][k] + a[k][j];
+}</code></pre>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Shortest Paths</th><th>Minimum Spanning Tree</th></tr></thead>
+          <tbody>
+            <tr><td>圖</td><td>邊權非負的有向圖</td><td>有權重的無向圖</td></tr>
+            <tr><td>目標</td><td>起點到其他每個頂點的最短路徑</td><td>邊權總和最小的 spanning tree</td></tr>
+            <tr><td>演算法</td><td>Single source：Dijkstra；All-pairs：Floyd-Warshall</td><td>Kruskal、Prim、Sollin（皆為 greedy）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="transitive-closure">Transitive Closure</h3>
+      <p>判斷無權重圖中 \(i\) 到 \(j\) 是否有 path：</p>
+      <ul>
+        <li><strong>Transitive closure matrix \(A^+\)</strong>：\(A^+[i][j]=1\) 若有長度 \(&gt;0\) 的 path</li>
+        <li><strong>Reflexive transitive closure matrix \(A^*\)</strong>：\(A^*[i][j]=1\) 若有長度 \(\ge 0\) 的 path</li>
+        <li>同樣用 Floyd-Warshall：\(A^k[i][j]=A^{k-1}[i][j]\ \|\ (A^{k-1}[i][k]\ \&amp;\&amp;\ A^{k-1}[k][j])\)</li>
+      </ul>
+      <p class="src">Session7-Graphs_240508_093837.pdf p.54–69</p>
+
+      <!-- ===================================================== -->
+      <h2 id="aov">6. Activity Networks 與 Topological Order</h2>
+      <ul>
+        <li>專案可以拆成數個子專案，每個稱為 <strong>activity</strong>。</li>
+        <li><strong>AOV (Activity-on-Vertex) network</strong>：有向圖，頂點代表工作 / 活動，邊代表工作之間的先後關係。</li>
+        <li><strong>Predecessor</strong>：頂點 \(i\) 是 \(j\) 的 predecessor iff 有一條從 \(i\) 到 \(j\) 的 directed path。</li>
+        <li><strong>Topological order</strong>：頂點的線性排序，使得若 \(i\) 是 \(j\) 的 predecessor，則 \(i\) 排在 \(j\) 前面。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：資工學位的課程先修關係</span>
+          例如 C3 Data Structures 需要先修 C1 Programming I、C2 Discrete Mathematics；C7 Analysis of Algorithms 需要 C3、C6。用 topological ordering 產生的線性順序，就是一種修完所有課程的可能方式。
+        </div>
+      </div>
+      <p><strong>求 topological order</strong>：反覆挑出一個沒有 predecessor 的頂點 \(v\)；在 adjacency lists 的每個頂點多一個欄位 <code>count</code> 記錄 in-degree。</p>
+      <p>講義自學主題：AOE (Activity-on-Edge) networks、critical path analysis。</p>
+      <p class="src">Session7-Graphs_240508_093837.pdf p.71–76</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. \(n\) 個頂點的無向圖與有向圖最多各有幾條邊？</summary>
+        <div class="answer">
+          <p>無向圖 \(n(n-1)/2\)；有向圖 \(n(n-1)\)。</p>
+          <p class="src">Session7-Graphs_240508_093837.pdf p.8</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. DFS 用 adjacency matrix 與 adjacency lists 的時間各是多少？</summary>
+        <div class="answer">
+          <p>Adjacency matrix \(O(n^2)\)；adjacency lists \(O(n+e)\)（\(n+2e\) 個節點各檢查最多一次）。BFS 的時間與 DFS 相同。</p>
+          <p class="src">Session7-Graphs_240508_093837.pdf p.33–34, p.37</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. Kruskal 演算法用了哪兩個資料結構？時間複雜度？</summary>
+        <div class="answer">
+          <p>Min heap（取出成本最小的邊）與集合表示法（判斷是否形成 cycle）；\(O(e\log e)\)。</p>
+          <p class="src">Session7-Graphs_240508_093837.pdf p.46–47</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. Prim 演算法的 near-to-tree 陣列記錄什麼？時間複雜度？</summary>
+        <div class="answer">
+          <p>記錄不在 \(V(T)\) 但與 \(T\) 相鄰的頂點到 \(T\) 的最近距離；\(O(n^2)\)。</p>
+          <p class="src">Session7-Graphs_240508_093837.pdf p.49, p.51</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 寫出 Floyd-Warshall 的遞迴式，並說明 \(A^k[i][j]\) 的意義。</summary>
+        <div class="answer">
+          <p>\(A^k[i][j]=\min\{A^{k-1}[i][j],A^{k-1}[i][k]+A^{k-1}[k][j]\}\)；\(A^k[i][j]\) 是從 \(i\) 到 \(j\)、中間頂點編號都不大於 \(k\) 的最短路徑長度。</p>
+          <p class="src">Session7-Graphs_240508_093837.pdf p.62</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q6. 什麼是 topological order？要怎麼求？</summary>
+        <div class="answer">
+          <p>頂點的線性排序，使每個 predecessor 都排在它的後繼之前。反覆挑出沒有 predecessor（in-degree = 0）的頂點，用 <code>count</code> 欄位記錄 in-degree。</p>
+          <p class="src">Session7-Graphs_240508_093837.pdf p.72, p.75</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Session7-Graphs_240508_093837.pdf</code>　p.1–76（Yi-Shin Chen, Data Structures）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

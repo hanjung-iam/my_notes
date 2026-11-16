@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>線性時間排序與比較排序的下界 · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">線性時間排序與比較排序的下界</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>線性時間排序與比較排序的下界 (Linear-Time Sorting &amp; Lower Bound)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 06–07</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-06.pdf</code>、<code>Algo-Lecture-07.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">排序</span>
+          <span class="tag">下界</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>任何比較排序 (comparison sort)</strong> 在 worst case 都需要 \(\Omega(n\log n)\) 次比較（用 decision tree 證明）。</li>
+          <li>Counting Sort、Radix Sort、Bucket Sort 不是比較排序，<strong>對輸入有假設</strong>，因此可以達到線性時間。</li>
+          <li>Counting Sort：\(O(n+k)\)，是 <strong>stable</strong> 的；\(k=O(n)\) 時為線性。</li>
+          <li>Radix Sort：從<strong>最低位</strong>開始，每一位用 stable sort 排序；搭配 Counting Sort 為 \(O(d(n+k))\)。</li>
+          <li>Bucket Sort：輸入在 \([0,u)\) 均勻隨機分布時，期望時間 \(O(n)\)，worst case \(O(n^2)\)。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="counting-sort">1. Counting Sort</h2>
+      <h3 id="billionaire">引子：幫億萬富翁整理鈔票</h3>
+      <ul>
+        <li>錢包裡有 \(n\) 張鈔票，共 9 種面額：$1, $5, $10, $20, $50, $100, $200, $500, $1000。</li>
+        <li>Merge Sort 需要 \(O(n\log n)\)，但可以更快：每種面額準備一個 bin，逐張放入對應的 bin，再從 $1-bin、$5-bin…依序收回 → 總時間 \(O(n)\)。</li>
+        <li>鈔票之間沒有直接比較：我們看的是鈔票的<strong>值</strong>，依值分到正確的 bin；從小到大收回時，鈔票之間就做了<strong>間接比較</strong>。</li>
+      </ul>
+
+      <h3 id="counting-sort-algo">演算法</h3>
+      <p>排序存在陣列 \(A\) 中的 \(n\) 個 items，每個 item 的值屬於 \(k\) 個類別之一：</p>
+      <pre><span class="pseudo-label">Counting Sort</span><code>1. Count # items in each class
+2. Calculate positions in A for each class
+3. Put items to the correct positions</code></pre>
+      <p>實作上使用 \(k+1\) 個計數器 \(c[0],\dots,c[k]\)，並用一個額外陣列 \(B\) 暫存結果，最後再把 \(B\) 複製回 \(A\)。</p>
+
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：A = [2, 1, 2, 5, 3, 3, 1, 2]，k = 5</span>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>class</th><th># items</th><th>起始位置 pos</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>2</td><td>1</td></tr>
+                <tr><td>2</td><td>3</td><td>3</td></tr>
+                <tr><td>3</td><td>2</td><td>6</td></tr>
+                <tr><td>4</td><td>0</td><td>8</td></tr>
+                <tr><td>5</td><td>1</td><td>8</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>由左到右逐一把 item 放到 \(B\) 中該類別目前的 pos，放完後該類別的 pos 加 1。全部放完後 \(B\) = [1, 1, 2, 2, 2, 3, 3, 5]，再複製回 \(A\)。</p>
+        </div>
+      </div>
+
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">重點</span>
+          <ul>
+            <li>執行時間 \(O(n+k)\)；當 \(k=O(n)\) 時為線性時間。</li>
+            <li>Counting Sort 是 <strong>stable</strong> 的排序：值相同的 items 在排序前後的相對順序不變。</li>
+          </ul>
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-06.pdf p.3–21</p>
+
+      <!-- ===================================================== -->
+      <h2 id="radix-sort">2. Radix Sort</h2>
+      <p>問題：給 \(n\) 個數，每個數有 \(d\) 位、是 radix-\(k\)（十進位 → radix-10、二進位 → radix-2），要怎麼排序？</p>
+      <ul>
+        <li><strong>直覺做法</strong>：先依最高位 (most-significant digit) 排序，再分別排序最高位相同的數。但處理 \(r\) 位之後，可能會有 \(k^r\) 組。</li>
+        <li><strong>Radix Sort 反過來做</strong>：
+          <ul>
+            <li>一次處理一位，<strong>從最低位 (least-significant digit) 開始</strong></li>
+            <li>每一位都用 <strong>stable sort</strong>（例如 Counting Sort）依該位排序全部 \(n\) 個數</li>
+            <li>每一位的處理都一樣 → 用同樣的時間、重複使用同樣的空間 → 很容易實作</li>
+          </ul>
+        </li>
+      </ul>
+
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：1904, 2579, 1874, 6355, 4432, 8318, 1304</span>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>回合</th><th>依哪一位 stable sort</th><th>結果</th></tr></thead>
+              <tbody>
+                <tr><td>Round 1</td><td>個位</td><td>4432, 1904, 1874, 1304, 6355, 8318, 2579</td></tr>
+                <tr><td>Round 2</td><td>十位</td><td>1904, 1304, 8318, 4432, 6355, 1874, 2579</td></tr>
+                <tr><td>Round 3</td><td>百位</td><td>1304, 8318, 6355, 4432, 2579, 1874, 1904</td></tr>
+                <tr><td>Round 4</td><td>千位</td><td>1304, 1874, 1904, 2579, 4432, 6355, 8318</td></tr>
+              </tbody>
+            </table>
+          </div>
+          每個 Round \(r\) 結束後，最後 \(r\) 位都已經排好。
+        </div>
+      </div>
+
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">重點</span>
+          <ul>
+            <li>正確性：可以證明「經過 \(r\) 回合後，所有數已依最後 \(r\) 位排好」。</li>
+            <li>用 Counting Sort 當內部的 stable sort 時，執行時間為 \(O(d(n+k))\)。</li>
+          </ul>
+        </div>
+      </div>
+      <p>講義思考題：給 \(n\) 個從 \([0,n^2]\) 中選出的整數，如何在 \(O(n)\) 時間內排序？（講義未附答案）</p>
+      <p class="src">Algo-Lecture-06.pdf p.22–29</p>
+
+      <!-- ===================================================== -->
+      <h2 id="bucket-sort">3. Bucket Sort</h2>
+      <p>假設：\(n\) 個整數，每個都從 \([0,u)\) 中<strong>均勻隨機</strong>選出（\(n=o(u)\)），並假設 \(n\) 整除 \(u\)（若否，把 \(u\) 進位到 \(n\) 的最小倍數）。</p>
+      <ul>
+        <li>Merge Sort：\(O(n\log n)\)</li>
+        <li>Counting Sort：\(O(n+u)=O(u)\)</li>
+      </ul>
+      <pre><span class="pseudo-label">Bucket Sort</span><code>1. Divide the range [0, u) into n equal-length parts
+   (where a number z belongs to part ⌊z / (u/n)⌋)
+2. Create one bucket for each part
+3. Distribute input integers into corresponding buckets
+4. Sort the integers in each bucket
+5. Combine the sorted results</code></pre>
+
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：範圍 [0, 1000)，輸入 235, 127, 478, 873, 525, 170, 35, 990</span>
+          建立 8 個 buckets → 把數字分到對應的 bucket → 各 bucket 內排序 → 依序合併。
+        </div>
+      </div>
+
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">執行時間</span>
+          \(n\) 個整數、\(n\) 個 buckets → 平均每個 bucket 1 個整數，每個 bucket 內的排序通常只牽涉少數幾個整數，甚至可以用 Insertion Sort。
+          <ul>
+            <li>Worst-case：\(O(n^2)\)</li>
+            <li>Expected：\(O(n)\)</li>
+          </ul>
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-06.pdf p.30–35</p>
+
+      <!-- ===================================================== -->
+      <h2 id="lower-bound">4. 比較排序的下界 (Lower Bound of Comparison Sort)</h2>
+      <ul>
+        <li><strong>Comparison sort</strong>：只用「比較」推得 items 之間的相對順序來排序；比較兩個 items 只知道誰比較大，不知道它們的值。</li>
+        <li>適用：Insertion Sort、Selection Sort、Bubble Sort、Heapsort、Merge Sort、Quicksort</li>
+        <li>不適用：Counting Sort、Radix Sort、Bucket Sort</li>
+        <li>目前學過最快的比較排序是 Merge Sort 和 Heapsort，worst case 為 \(O(n\log n)\)。有沒有 \(o(n\log n)\) 的比較排序？答案是<strong>沒有</strong>。</li>
+      </ul>
+
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Theorem</span>
+          任何比較排序在 worst case 下，排序 \(n\) 個相異 items 都需要 \(\Omega(n\log n)\) 次比較。<br>
+          → 因此任何比較排序的執行時間都是 \(\Omega(n\log n)\)。
+        </div>
+      </div>
+
+      <h3 id="decision-tree">Decision Tree</h3>
+      <p>因為定理只計算比較次數，可以假設其他操作（例如移動 items）都是免費的。比較排序可以看成：先做一連串比較，再用無限多次免費操作找出正確順序。不同輸入下的執行過程可以畫成一棵樹，稱為該演算法的 <strong>decision tree</strong>：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>樹的元素</th><th>代表</th></tr></thead>
+          <tbody>
+            <tr><td>Internal node</td><td>一次比較</td></tr>
+            <tr><td>Branch</td><td>比較的結果</td></tr>
+            <tr><td>Leaf</td><td>一種排序順序</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：排序 A、B、C</span>
+          <ul>
+            <li><strong>方法 1</strong>：依序比較 A:B、A:C、B:C，再決定順序 → 永遠用 3 次比較（樹中有些 leaf 是不可能發生的情況）。</li>
+            <li><strong>方法 2</strong>：先檢查 A &lt; B，再檢查 B &lt; C；只有前兩次結果不同時才比較 A:C → 有時只需要 2 次比較。</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 id="proof">證明</h3>
+      <p>對 \(n\) 個相異 items 的任何正確比較排序：</p>
+      <ol>
+        <li>Decision tree 是二元樹 (binary)</li>
+        <li>Decision tree 有 \(n!\) 個 leaves，因為要處理輸入的所有可能順序</li>
+      </ol>
+      \[\begin{aligned}
+      \text{node-height of decision tree} &amp;\ge \log(n!) \\
+      &amp;= \log n+\log(n-1)+\log(n-2)+\cdots \\
+      &amp;\ge (n/2)\log(n/2) = \Omega(n\log n)
+      \end{aligned}\]
+      <p>結論：任何比較排序的 worst-case 比較次數 = decision tree 的 node-height = \(\Omega(n\log n)\)。</p>
+      <p class="src">Algo-Lecture-07.pdf p.2–13</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 什麼是 stable 的排序？Counting Sort 是 stable 的嗎？</summary>
+        <div class="answer">
+          <p>值相同的 items 在排序前後出現的順序相同。Counting Sort 是 stable 的。</p>
+          <p class="src">Algo-Lecture-06.pdf p.21</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Radix Sort 從哪一位開始處理？每一位要用什麼樣的排序？</summary>
+        <div class="answer">
+          <p>從最低位 (least-significant digit) 開始；每一位都用 stable sort（例如 Counting Sort）。</p>
+          <p class="src">Algo-Lecture-06.pdf p.24</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 以 Counting Sort 為內部排序時，Radix Sort 的執行時間？</summary>
+        <div class="answer">
+          <p>\(O(d(n+k))\)。</p>
+          <p class="src">Algo-Lecture-06.pdf p.29</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. Bucket Sort 的 worst-case 與 expected 執行時間？</summary>
+        <div class="answer">
+          <p>用 Insertion Sort 排每個 bucket 時，worst-case \(O(n^2)\)，expected \(O(n)\)。</p>
+          <p class="src">Algo-Lecture-06.pdf p.35</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 為什麼 decision tree 的高度至少是 \(\log(n!)\)？</summary>
+        <div class="answer">
+          <p>Decision tree 是二元樹，且必須有 \(n!\) 個 leaves 來處理 \(n\) 個 items 的所有可能順序。</p>
+          <p class="src">Algo-Lecture-07.pdf p.12</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-06.pdf</code>　p.1–35（Linear-Time Sorting）</li>
+        <li><code>Algo-Lecture-07.pdf</code>　p.1–13（Lower Bound of Comparison Sort）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

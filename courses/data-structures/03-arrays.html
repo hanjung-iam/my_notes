@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>陣列：多項式與稀疏矩陣 (Arrays) · 資料結構</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="data-structures" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">資料結構</a>
+      <span class="sep">/</span>
+      <span class="current">陣列：多項式與稀疏矩陣 (Arrays)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>陣列：多項式與稀疏矩陣 (Arrays)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>資料結構</dd>
+          <dt>單元</dt><dd>Session 3</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Session3-Arrays Handout.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">線性結構</span>
+          <span class="tag">矩陣</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>Array 表示一個 linear list；<strong>sequential mapping</strong> 支援有效率的隨機存取，<strong>non-sequential mapping</strong>（如 linked list）插入刪除較有效率。</li>
+          <li>多項式兩種表示：存<strong>所有係數</strong>（好實作，但稀疏時浪費空間）vs 只存<strong>非零項</strong>（稀疏時較好，滿的時候大小加倍）。</li>
+          <li>多項式加法像合併兩個排序好的串列：while 迴圈 worst case 執行 \(m+n\) 次。</li>
+          <li>Sparse matrix 只存非零項 (row, col, value)；轉置有 Trivial、Smart \(O(\text{cols}\cdot\text{terms})\)、<strong>Fast \(O(\text{terms}+\text{cols})\)</strong> 三種。</li>
+          <li>Sparse matrix 相乘：先把 \(b\) 做 Fast Transpose，再用類似多項式加法的方式計算每個 \(c[i][j]\)。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="array">1. Array 的定義與操作</h2>
+      <ul>
+        <li>基本資料結構：陣列（homogeneous / heterogeneous）、List（Stack、Queue）、Tree。</li>
+        <li><strong>Array</strong>：表示 linear list 的資料結構，元素可以是相同或不同的資料型別。例：一週的天數、一副牌、電話簿。</li>
+      </ul>
+      <p>ADT \(\text{array}[n]=\{a_0,a_1,\dots,a_{n-1}\}\) 的常見操作：</p>
+      <ul>
+        <li>求長度 \(n\)；由左到右（或反向）讀取</li>
+        <li>取出第 \(i\) 個元素、在第 \(i\) 個位置存入新元素（\(0\le i&lt;n\)）</li>
+        <li>在位置 \(i\) 插入 / 刪除元素</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>表示法</th><th>做法</th><th>特性</th></tr></thead>
+          <tbody>
+            <tr><td>Sequential mapping</td><td>元素 \(a_i\) 存在陣列的位置 \(i\)</td><td>最常用；隨機存取有效率</td></tr>
+            <tr><td>Non-sequential mapping</td><td>例：Linked Lists</td><td>插入與刪除有效率</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Session3-Arrays Handout.pdf p.2–5</p>
+
+      <!-- ===================================================== -->
+      <h2 id="polynomial">2. 用陣列表示多項式</h2>
+      \[p(x)=a_0x^{e_0}+a_1x^{e_1}+\cdots+a_nx^{e_n}=\sum_{i=0}^{n}a_ix^{e_i}\]
+      <ul>
+        <li>每個 \(a_ix^{e_i}\) 稱為一個 <strong>term</strong>，係數為 \(a_i\)。</li>
+        <li><strong>Degree</strong>：非零項中最大的指數。例：\(p(x)=x^5+4x^3+2x^2+1\) 有 4 項，係數 1, 4, 2, 1，degree 為 5。</li>
+        <li>加法：\(a(x)+b(x)=\sum(a_i+b_i)x^i\)；乘法：\(a(x)\cdot b(x)=\sum(a_ix^i\cdot\sum b_jx^j)\)。</li>
+        <li>例：\(a(x)=x^5+4x^3+2x^2+1\)、\(b(x)=3x^6+4x^3+x\) → \(a(x)+b(x)=3x^6+x^5+8x^3+2x^2+x+1\)（degree 6）。</li>
+      </ul>
+
+      <pre><span class="pseudo-label">Polynomial ADT（C++）</span><code>class Polynomial {
+public:
+    Polynomial(void);                 // Construct p(x) = 0
+    ~Polynomial(void);                // Destructor
+    Polynomial Add(Polynomial poly);  // Return the sum of *this and poly
+    Polynomial Mult(Polynomial poly); // Return multiplication of *this and poly
+    float Eval(float f );             // Return the evaluation result
+private:
+    // Array representation
+};</code></pre>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>表示法</th><th>做法</th><th>優點</th><th>缺點</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>第 1 種</td>
+              <td>依指數遞減/遞增順序存<strong>所有係數</strong>：<code>int degree; float coef[MaxDegree+1];</code>，\(\text{coef}[i]=a_{n-i}\)</td>
+              <td>操作容易實作</td>
+              <td>稀疏多項式浪費記憶體</td>
+            </tr>
+            <tr>
+              <td>第 2 種</td>
+              <td>只存<strong>非零項</strong>，每項存 exponent 與 coefficient：<code>Term* termArray; int capacity; int terms;</code></td>
+              <td>多項式稀疏時較好</td>
+              <td>多項式是滿的時候，大小是第 1 種的兩倍</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="poly-add">多項式加法（第 2 種表示）</h3>
+      <pre><span class="pseudo-label">Polynomial::Add（C++）</span><code>Polynomial Polynomial::Add(Polynomial b)
+{ // Return sum of polynomial *this and b
+    Polynomial c;
+    int aPos = 0, bPos = 0;
+    while((aPos &lt; terms) &amp;&amp; (bPos &lt; b.terms))
+        if(termArray[aPos].exp == b.termArray[bPos].exp){
+            float t = termArray[aPos].coef + b.termArray[bPos].coef;
+            if(t) c.NewTerm(t, termArray[aPos].exp);
+            aPos++; bPos++;}
+        else if(termArray[aPos].exp &lt; b.termArray[bPos].exp){
+            c.NewTerm(b.termArray[bPos].coef, b.termArray[bPos].exp);
+            bPos++;}
+        else{
+            c.NewTerm(termArray[aPos].coef,termArray[aPos].exp);
+            aPos++;}
+    // add in remaining terms of *this
+    for(; aPos &lt; terms; aPos++)
+        c.NewTerm(termArray[aPos].coef, termArray[aPos].exp);
+    // add in remaining terms of b
+    for(; bPos &lt; b.terms; bPos++)
+        c.NewTerm(b.termArray[bPos].coef, b.termArray[bPos].exp);
+    return c;}</code></pre>
+      <ul>
+        <li>while 迴圈內每個敘述都是 \(O(1)\)。</li>
+        <li>設 \(a(x)\) 有 \(m\) 項、\(b(x)\) 有 \(n\) 項；每次迭代會前進到 \(a(x)\) 或 \(b(x)\)（或兩者）的下一項 → while 迴圈 worst case 執行 \(m+n\) 次。</li>
+      </ul>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          p.15 中「存取 A(x)、B(x) 剩餘項的時間」與「總執行時間」三個空格在 PDF 中沒有文字（可能是上課時補寫），請對照上課筆記補上。
+        </div>
+      </div>
+      <p class="src">Session3-Arrays Handout.pdf p.7–15</p>
+
+      <!-- ===================================================== -->
+      <h2 id="matrix">3. 用陣列表示矩陣</h2>
+      <p>矩陣 \(A_{m\times n}\) 有 \(m\) 列、\(n\) 行，存成二維陣列 <code>a[m][n]</code>，第 \(i\) 列第 \(j\) 行的元素為 <code>a[i][j]</code>。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>操作</th><th>定義</th><th>程式（C++，講義）</th></tr></thead>
+          <tbody>
+            <tr><td>Transpose</td><td>\(C_{n\times m}=A^t_{m\times n}\)，\(c[i][j]=a[j][i]\)</td><td>兩層迴圈：<code>// O(rows)</code>、<code>// O(cols)</code></td></tr>
+            <tr><td>Addition</td><td>\(C_{m\times n}=A_{m\times n}+B_{m\times n}\)，\(c[i][j]=a[i][j]+b[i][j]\)</td><td>兩層迴圈：<code>// O(rows)</code>、<code>// O(cols)</code></td></tr>
+            <tr><td>Multiplication</td><td>\(C_{m\times p}=A_{m\times n}\times B_{n\times p}\)，\(c[i][j]=\sum_{k=0}^{n-1}a[i][k]\times b[k][j]\)</td><td>三層迴圈：<code>// O(rows)</code>、<code>// O(b.cols)</code>、<code>// O(cols)</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><span class="pseudo-label">Matrix::Multiply（C++）</span><code>Matrix Matrix::Multiply(Matrix b){
+    Matrix c(rows, b.cols);
+    for (i=0; i&lt;rows; i++) {            // O(rows)
+        for (j=0; j&lt;b.cols; j++) {      // O(b.cols)
+            sum=0;
+            for (k=0; k&lt;cols; k++)      // O(cols)
+                sum += a[i][k]*b[k][j];
+            c[i][j]=sum;
+        }
+    }
+    return c;
+}</code></pre>
+      <p>（講義在每段程式旁留有「Time complexity」空格；依程式註解與 Session 1 的 Rule of Product 可得各迴圈複雜度相乘。）</p>
+      <p class="src">Session3-Arrays Handout.pdf p.18–23；Rule of Product 見 Session1-Algorithms Handout.pdf p.52</p>
+
+      <!-- ===================================================== -->
+      <h2 id="sparse">4. 稀疏矩陣 (Sparse Matrix)</h2>
+      <ul>
+        <li>有很多 0 元素的矩陣，例如 \(5000\times5000\) 的矩陣只有 100 個非零元素。</li>
+        <li>用二維陣列表示沒效率：存放與計算 0 元素浪費記憶體與時間。</li>
+        <li>改為只存非零項：每項為 <code>MatrixTerm {row, col, value}</code>，依 row major 順序存在 <code>smArray</code>。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：6×6 矩陣的非零項</span>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th></th><th>row</th><th>col</th><th>value</th></tr></thead>
+              <tbody>
+                <tr><td>smArray[0]</td><td>0</td><td>0</td><td>15</td></tr>
+                <tr><td>smArray[1]</td><td>0</td><td>3</td><td>22</td></tr>
+                <tr><td>smArray[2]</td><td>0</td><td>5</td><td>-15</td></tr>
+                <tr><td>smArray[3]</td><td>1</td><td>1</td><td>11</td></tr>
+                <tr><td>smArray[4]</td><td>1</td><td>2</td><td>3</td></tr>
+                <tr><td>smArray[5]</td><td>2</td><td>3</td><td>-6</td></tr>
+                <tr><td>smArray[6]</td><td>4</td><td>0</td><td>91</td></tr>
+                <tr><td>smArray[7]</td><td>5</td><td>2</td><td>28</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <h3 id="transpose">三種轉置方法</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>方法</th><th>做法</th><th>時間</th></tr></thead>
+          <tbody>
+            <tr><td>Trivial Transpose</td><td>直接把每項的 row、col 對調</td><td>問題：\(A^T\) 的非零項不再依 row major 順序排列</td></tr>
+            <tr><td>Smart Transpose</td><td>因為 row 與 col 對調，改用 column-major 順序掃描：對每個 column \(c\)，掃過所有項，把 col = \(c\) 的項依序放入</td><td>\(O(\text{cols}\cdot\text{terms})\)（外層 cols、內層 terms）</td></tr>
+            <tr><td><strong>Fast Transpose</strong></td><td>只需檢查所有項一次，用額外空間 rowSize、rowStart</td><td>\(O(\text{terms}+\text{cols})\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="fast-transpose">Fast Transpose</h3>
+      <ul>
+        <li><code>rowSize[i]</code>：\(A^T\) 第 \(i\) 列的非零項數</li>
+        <li><code>rowStart[i]</code>：\(A^T\) 第 \(i\) 列的非零項起始位置；\(i&gt;0\) 時 \(\text{rowStart}[i]=\text{rowStart}[i-1]+\text{rowSize}[i-1]\)</li>
+        <li>再把 \(A\) 的元素一個一個複製到 \(A^T\) 的正確位置。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">上例的 rowSize / rowStart</span>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>\(A^T\) 的列</th><th>[0]</th><th>[1]</th><th>[2]</th><th>[3]</th><th>[4]</th><th>[5]</th></tr></thead>
+              <tbody>
+                <tr><td>rowSize</td><td>2</td><td>1</td><td>2</td><td>2</td><td>0</td><td>1</td></tr>
+                <tr><td>rowStart</td><td>0</td><td>2</td><td>3</td><td>5</td><td>7</td><td>7</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <pre><span class="pseudo-label">SparseMatrix::FastTranspose（C++）</span><code>SparseMatrix SparseMatrix::FastTranspose( )
+{ // Compute the transpose in O(terms + cols) time
+    SparseMatrix b(cols , rows , terms);
+    if (terms > 0) {
+        int *rowSize = new int[cols];
+        int *rowStart = new int[cols];
+        // compute rowSize[i]=number of terms in row i of b
+        fill(rowSize, rowSize+cols, 0);
+        for(int i=0; i&lt;terms; i++) rowSize[smArray[i].col]++;
+        // rowStart[i] = starting position of row i in b
+        rowStart[0] = 0;
+        for(int i=1; i&lt;cols; i++)
+            rowStart[i]=rowStart[i-1]+rowSize[i-1];
+        for(int i=0; i&lt;terms; i++)
+        { // copy terms from *this to b
+            int j = rowStart[smArray[i].col];
+            b.smArray[j].row = smArray[i].col;
+            b.smArray[j].col = smArray[i].row;
+            b.smArray[j].value = smArray[i].value;
+            rowStart[smArray[i].col]++;} // Increase the start pos by 1
+        delete [] rowSize;
+        delete [] rowStart;}
+    return b;}</code></pre>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>矩陣類型</th><th>比較</th></tr></thead>
+          <tbody>
+            <tr><td>Dense（terms = rows·cols）</td><td>Fast 與 Trivial 相同：\(O(\text{rows}\cdot\text{cols})\)；Smart 最慢：\(O(\text{rows}\cdot\text{cols}^2)\)</td></tr>
+            <tr><td>Sparse（terms ≪ rows·cols）</td><td>Fast Transpose 比 Trivial 和 Smart 都快</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="sparse-multiply">Sparse Matrix 相乘</h3>
+      <ol>
+        <li>先算出 \(b\) 的轉置 \(b^T\)（用 FastTranspose，\(O(\text{b.terms}+\text{b.cols})\)）。</li>
+        <li>對 \(a\) 的每一列 \(i\)、\(b^T\) 的每一列 \(j\)，用類似「多項式加法」的方式計算 \(c[i][j]\)（例：\((2)(4)+(7)(5)=43\)）。</li>
+      </ol>
+      <pre><span class="pseudo-label">SparseMatrix::Multiply（講義 pseudocode）</span><code>SparseMatrix SparseMatrix::Multiply(SparseMatrix b)
+{ // Compute the transpose of b
+    SparseMatrix bT = b.FastTranspose();    // O(b.terms + b.cols)
+    for ith row in smArray                  // O(rows)
+        for jth row in bT.smArray           // O(b.cols)
+            Perform "Polynomal Addition"    // O(Terms[i] + b.Terms[j])
+}</code></pre>
+      <p>複雜度：\(O(\text{rows}\cdot\text{b.cols}\cdot(\text{Terms}[i]+\text{b.Terms}[j]))\)，其中 \(\text{rows}\cdot\text{Terms}[i]=\text{a.terms}\)、\(\text{b.cols}\cdot\text{b.Terms}[j]=\text{b.terms}\)。完整程式請參考課本。</p>
+      <p class="src">Session3-Arrays Handout.pdf p.24–35</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. Sequential mapping 和 non-sequential mapping 各有什麼優點？</summary>
+        <div class="answer">
+          <p>Sequential mapping 隨機存取有效率（最常用）；non-sequential mapping（如 linked list）插入與刪除有效率。</p>
+          <p class="src">Session3-Arrays Handout.pdf p.5</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 多項式的第 2 種表示法（只存非零項）什麼時候比較差？</summary>
+        <div class="answer">
+          <p>多項式是滿的（非零項很多）時，所需空間是第 1 種表示法的兩倍。</p>
+          <p class="src">Session3-Arrays Handout.pdf p.11</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. Trivial transpose 有什麼問題？</summary>
+        <div class="answer">
+          <p>直接對調 row、col 後，\(A^T\) 的非零項不再依 row major 順序排列。</p>
+          <p class="src">Session3-Arrays Handout.pdf p.26</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. Fast transpose 用了哪兩個額外陣列？時間複雜度？</summary>
+        <div class="answer">
+          <p><code>rowSize</code>（\(A^T\) 各列非零項數）與 <code>rowStart</code>（各列起始位置，\(\text{rowStart}[i]=\text{rowStart}[i-1]+\text{rowSize}[i-1]\)）。時間 \(O(\text{terms}+\text{cols})\)。</p>
+          <p class="src">Session3-Arrays Handout.pdf p.29</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 對 dense matrix 而言，三種轉置方法的時間如何？</summary>
+        <div class="answer">
+          <p>Fast 與 Trivial 相同，都是 \(O(\text{rows}\cdot\text{cols})\)；Smart 最慢，\(O(\text{rows}\cdot\text{cols}^2)\)。</p>
+          <p class="src">Session3-Arrays Handout.pdf p.32</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Session3-Arrays Handout.pdf</code>　p.1–35（Yi-Shin Chen, Data Structures）</li>
+        <li><code>Session1-Algorithms Handout.pdf</code>　p.52（Rule of Product）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

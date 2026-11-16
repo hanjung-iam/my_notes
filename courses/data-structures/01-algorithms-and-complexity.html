@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>演算法與複雜度分析 · 資料結構</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="data-structures" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">資料結構</a>
+      <span class="sep">/</span>
+      <span class="current">演算法與複雜度分析</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>演算法與複雜度分析 (Algorithms &amp; Complexity)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>資料結構</dd>
+          <dt>單元</dt><dd>Session 1</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Session1-Algorithms Handout.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">複雜度分析</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>演算法</strong>：一組有順序、明確、可執行，且會結束的步驟。五個條件：Input、Output、Definiteness、Finiteness、Effectiveness。</li>
+          <li>效能評估看兩件事：<strong>Space Complexity</strong> \(S(P)=C+S_P(I)\) 與 <strong>Time Complexity</strong> \(T(P)=C+T_P(I)\)。</li>
+          <li>比的是<strong>成長率 (growth rate)</strong>，不是步數：\(2n+3\) 和 \(2n+2\) 的時間複雜度相同。</li>
+          <li>\(O\)：上界；\(\Omega\)：下界；\(\Theta\)：同時是 \(O\) 和 \(\Omega\)。多項式只看最高次項。</li>
+          <li>Rule of Sum 取最大、Rule of Product 相乘；Binary Search 的 worst case 為 \(O(\log_2 n)\)。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="concept">1. 演算法的概念</h2>
+      <ul>
+        <li><strong>正式定義</strong>：演算法是一組有順序 (ordered)、不含糊 (unambiguous)、可執行 (executable) 的步驟，定義了一個會結束 (terminating) 的過程。</li>
+        <li>Problem = 演算法的動機；Algorithm = 解決問題的程序（通常是許多可能之一）。</li>
+        <li><strong>Program</strong>：演算法正式且可執行的表示；<strong>Process</strong>：執行程式的活動。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>演算法的條件</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td>Input</td><td>由外部提供零個或多個量</td></tr>
+            <tr><td>Output</td><td>至少產生一個量</td></tr>
+            <tr><td>Definiteness</td><td>每個指令都清楚、不含糊</td></tr>
+            <tr><td>Finiteness</td><td>在有限步之後結束</td></tr>
+            <tr><td>Effectiveness</td><td>每個指令都必須基本、容易計算</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3 id="representation">演算法的表示方式</h3>
+      <ul>
+        <li>自然語言（英文、中文…）：句子很多</li>
+        <li>圖形表示（Flowchart）：只適合小而簡單的演算法</li>
+        <li>程式語言 + 少量英文（例如 C++）：簡潔有效</li>
+        <li><strong>Primitives</strong>：一組定義清楚的基本元件，用來組成演算法的表示；包含 syntax（符號表示）與 semantics（代表的概念）。</li>
+      </ul>
+      <p class="src">Session1-Algorithms Handout.pdf p.3–6</p>
+
+      <!-- ===================================================== -->
+      <h2 id="thinking">2. 解題的思考過程</h2>
+      <ul>
+        <li>開發程式包含兩部分：找出背後的演算法，以及把演算法表示成程式。</li>
+        <li>不存在能為任何問題產生演算法的演算法；有些問題是無法解的。解題能力比較像需要培養的藝術技巧。</li>
+      </ul>
+      <p><strong>解題階段</strong>（不一定依序完成）：</p>
+      <ol>
+        <li>理解問題</li>
+        <li>想出演算法程序可能如何解決問題</li>
+        <li>寫出演算法並表示成程式</li>
+        <li>評估程式的正確性，以及用來解決其他問題的潛力</li>
+      </ol>
+      <ul>
+        <li><strong>Incubation periods</strong>：有意識的工作與突然的靈感之間，潛意識仍在持續運作，最後把解法推到意識中。</li>
+        <li><strong>入門技巧</strong>：從問題的結果往回推；先解一個較簡單的相關問題（放寬限制）；先解問題的一部分 = <strong>bottom-up</strong>；<strong>Stepwise refinement = top-down</strong>（常用，因為能產生模組化的程式）。</li>
+        <li><strong>邏輯思考</strong>：把大問題拆小 (Divide)，再把小問題的結果組合起來 (Conquer)。</li>
+      </ul>
+      <p>講義課後練習：找出日常生活中 divide and conquer 的例子。</p>
+      <p class="src">Session1-Algorithms Handout.pdf p.8–13</p>
+
+      <!-- ===================================================== -->
+      <h2 id="pseudocode">3. Pseudocode</h2>
+      <p>比正式程式語言更不正式、更直觀的表示系統，能在開發演算法的過程中非正式地表達想法，讓人專注在概念上（研究顯示人腦一次只能處理約 7 個細節）。Flowchart 和圖形表示也是有用的工具。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Primitive</th><th>形式</th></tr></thead>
+          <tbody>
+            <tr><td>Assignment</td><td><code>name ← expression</code></td></tr>
+            <tr><td>Conditional selection</td><td><code>if condition then action</code></td></tr>
+            <tr><td>Repeated execution</td><td><code>while condition do activity</code></td></tr>
+            <tr><td>Procedure</td><td><code>procedure name (generic names)</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><span class="pseudo-label">Conditional Branch / Conditional Loop / Procedure 範例</span><code>if (year is leap year)
+    then (divide total by 366)
+    else (divide total by 365)
+
+while (tickets remain to be sold) do
+    (sell tickets)
+
+procedure Greetings (var)
+assign Count the value var + 6;
+while Count > 0 do
+    (print the message "Hello" and
+     assign Count the value Count - 1)</code></pre>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">重點</span>
+          用縮排和括號讓 pseudocode 更容易閱讀。
+        </div>
+      </div>
+
+      <h3 id="iterative">Iterative Structures</h3>
+      <p>以迴圈方式重複一組指令，有四種程式區塊：</p>
+      <ul>
+        <li><strong>Initialize</strong>：建立要被修改的初始狀態</li>
+        <li><strong>Test</strong>：比較目前狀態與結束條件</li>
+        <li><strong>Statement</strong>：每次迭代重複執行的區塊</li>
+        <li><strong>Modify</strong>：把狀態往結束條件推進</li>
+      </ul>
+      <pre><span class="pseudo-label">三種迴圈</span><code>While-loop:  initialize; while( test ) { activity; modify; }
+Repeat-loop: initialize; repeat ( activity; modify; ) until ( test )
+For-loop:    for( initialize; test; modify ) { statement; }</code></pre>
+
+      <h3 id="recursive">Recursive Structures</h3>
+      <ul>
+        <li>另一種重複結構：呼叫自己（Divide-and-Conquer）。</li>
+        <li>執行時會產生多個 instance（children），每個 child 負責解決較小的問題，並把結果回傳給 parent；同一時間只有一個 instance 在推進。</li>
+      </ul>
+
+      <h3 id="search-pseudocode">範例：Sequential Search 與 Binary Search</h3>
+      <pre><span class="pseudo-label">Sequential Search</span><code>procedure Search (List, TargetValue)
+if (List empty)
+    then
+        (Declare search a failure)
+    else
+        (Select the first entry in List to be TestEntry;
+         while (TargetValue > TestEntry and
+                there remain entries to be considered)
+             do (Select the next entry in List as TestEntry.);
+         if (TargetValue = TestEntry)
+             then (Declare search a success.)
+             else (Declare search a failure.)
+        ) end if</code></pre>
+      <pre><span class="pseudo-label">Binary Search</span><code>procedure Search (List, TargetValue)
+if (List empty)
+  then
+    (Report that the search failed.)
+  else
+    [Select the "middle" entry in List to be the TestEntry;
+     Execute the block of instructions below that is
+       associated with the appropriate case.
+         case 1: TargetValue = TestEntry
+                   (Report that the search succeeded.)
+         case 2: TargetValue < TestEntry
+                   (Apply the procedure Search to see if TargetValue
+                    is in the portion of the List preceding TestEntry,
+                    and report the result of that search.)
+         case 3: TargetValue > TestEntry
+                   (Apply the procedure Search to see if TargetValue
+                    is in the portion of List following TestEntry,
+                    and report the result of that search.)
+    ] end if</code></pre>
+      <p class="src">Session1-Algorithms Handout.pdf p.15–25</p>
+
+      <!-- ===================================================== -->
+      <h2 id="performance">4. 效能評估</h2>
+      <ul>
+        <li>同一個問題可以有很多演算法，選擇有效率或沒效率的演算法差別很大。</li>
+        <li>兩個準則：<strong>Space Complexity</strong>（用了多少記憶體）、<strong>Time Complexity</strong>（需要多少執行時間）。</li>
+        <li>兩種評估方式：
+          <ul>
+            <li><strong>Performance Analysis</strong>：與機器無關，事前估計 (a priori)</li>
+            <li><strong>Performance Measurement</strong>：與機器有關，事後測試 (a posteriori)</li>
+          </ul>
+        </li>
+        <li>背景：Von Neumann 架構包含 CPU（ALU、Control Unit、Registers）、Memory Unit、Buses。</li>
+      </ul>
+
+      <h3 id="space">Space Complexity</h3>
+      \[S(P)=C+S_P(I)\]
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>部分</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td>\(C\)：固定部分</td><td>與輸入輸出無關；包含指令空間、簡單變數、固定大小的結構變數、常數</td></tr>
+            <tr><td>\(S_P(I)\)：變動部分</td><td>取決於問題實例；包含被參照的變數與遞迴堆疊空間 (instance characteristics)，以及輸入輸出的數量與大小</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><span class="pseudo-label">例子（C++）</span><code>float Abc(float a, b, c)
+{
+    return a+b+b*c+(a+b-c)/(a+b)+4.00;
+}
+// S_Abc(I) = 0, S(Abc) = C = constant
+
+float Sum(float *A, const int n)
+{   float s = 0;
+    for(int i=0; i&lt;n; i++)
+        s += A[i];
+    return s;
+}
+// S_Sum(I) = 0 (A stores only the address of array), S(Sum) = constant
+
+float Rsum(float *A, const int n)
+{
+    if (n&lt;=0) return 0;
+    else return (Rsum(A, n-1) + A[n-1]);
+}
+// Rsum(A, n) → Rsum(A, n-1) → … → Rsum(A, 0)：共 n+1 次呼叫</code></pre>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          p.37 中「每次 Rsum 呼叫需要的空間」與 \(S(\text{Rsum})\) 的結果，在 PDF 中沒有可讀取的文字（可能是課堂上補寫或動畫內容），請對照講義或上課筆記補上。
+        </div>
+      </div>
+
+      <h3 id="time">Time Complexity</h3>
+      \[T(P)=C+T_P(I)\]
+      <ul>
+        <li>\(C\)：常數部分（compile time）；\(T_P(I)\)：變動部分（running time）。</li>
+        <li>用 <strong>program step</strong> 估計 \(T_P(I)\)：一個 program step = 執行時間與 instance characteristics 無關的敘述。</li>
+      </ul>
+      <pre><span class="pseudo-label">Iterative Summing 的步數</span><code>float Sum(float *A, const int n)
+{   float s = 0;               // 1 step
+    for(int i=0; i&lt;n; i++)     // n+1 steps
+        s += A[i];             // n steps
+    return s;                  // 1 step
+}</code></pre>
+      <pre><span class="pseudo-label">Recursive Summing 的步數</span><code>float Rsum(float *A, const int n)
+{
+    if (n&lt;=0)                               // 1 step
+        return 0;                           // 1 step
+    else return (Rsum(A, n-1) + A[n-1]);    // 1 step
+}</code></pre>
+      <p>結果：\(T_{\text{Sum}}(n)=2n+3\) steps，\(T_{\text{Rsum}}(n)=2n+2\) steps。（\(T_{\text{Rsum}}\) 的遞迴推導過程在 p.40 沒有可讀取的文字。）</p>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">易錯：步數少 ≠ 比較快</span>
+          不能說 Rsum 比 Sum 快，因為每個 step 的執行時間不同。我們在意的是<strong>成長率</strong>：輸入變 10 倍時，兩者的執行時間都變 10 倍（linear time），所以兩者的時間複雜度相同。
+        </div>
+      </div>
+      <p class="src">Session1-Algorithms Handout.pdf p.27–42</p>
+
+      <!-- ===================================================== -->
+      <h2 id="asymptotic">5. 漸進符號 (Asymptotic Notation)</h2>
+      <p>比較複雜度時要看 \(n\) 夠大的情況。例：\(P_1=n^2+2n\)、\(P_2=100n\) 或 \(1000n\)，只要 \(n\) 夠大，\(P_1&gt;P_2\)。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>符號</th><th>定義</th><th>例子</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Big-O</td>
+              <td>\(f(n)=O(g(n))\) iff 存在 \(c,n_0&gt;0\) 使得對所有 \(n\ge n_0\)，\(f(n)\le c\,g(n)\)</td>
+              <td>\(3n+2\le 4n\ (n\ge 2)\)；\(100n+6\le 101n\ (n\ge 6)\)；\(10n^2+4n+2\le 11n^2\ (n\ge 5)\)</td>
+            </tr>
+            <tr>
+              <td>Omega</td>
+              <td>\(f(n)=\Omega(g(n))\) iff 存在 \(c,n_0&gt;0\) 使得對所有 \(n\ge n_0\)，\(f(n)\ge c\,g(n)\)</td>
+              <td>\(3n+2\ge 3n\)；\(100n+6\ge 100n\)；\(10n^2+4n+2\ge n^2\)（皆 \(n\ge 1\)）</td>
+            </tr>
+            <tr>
+              <td>Theta</td>
+              <td>\(f(n)=\Theta(g(n))\) iff \(f(n)=O(g(n))\) 且 \(f(n)=\Omega(g(n))\)</td>
+              <td>\(3n+2=\Theta(n)\)；\(100n+6=\Theta(n)\)；\(10n^2+4n+2=\Theta(n^2)\)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Theorem 1.2</span>
+          若 \(f(n)=a_mn^m+\cdots+a_1n+a_0\)，則 \(f(n)=O(n^m)\)。
+          \[f(n)\le |a_m|n^m+\cdots+|a_1|n+|a_0| \le n^m(|a_m|+\cdots+|a_1|+|a_0|)\le c\,n^m\quad(n\ge 1)\]
+          → 最高次項的係數與低次項都不重要。
+        </div>
+      </div>
+
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">練習（講義）</span>
+          <ul>
+            <li>\(n^2-10n-6=O(n^2)\)、\(n+\log n=O(n)\)、\(n+n\log n=O(n\log n)\)、\(n^2+\log n=O(n^2)\)、\(2^n+n^{10000}=O(2^n)\)</li>
+            <li>\(n^4+1000n^3+n^2=O(n^4)\)？\(=O(n^5)\)？（講義留為是非題）</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 id="growth">常見的成長率</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>複雜度</th><th>名稱</th></tr></thead>
+          <tbody>
+            <tr><td>\(O(1)\)</td><td>Constant time</td></tr>
+            <tr><td>\(O(\log n)\)</td><td>Logarithmic time</td></tr>
+            <tr><td>\(O(n\log n)\)</td><td>介於 \(O(\log n)\) 與 \(O(n^2)\) 之間</td></tr>
+            <tr><td>\(O(n^2)\)</td><td>Quadratic time</td></tr>
+            <tr><td>\(O(n^3)\)</td><td>Cubic time</td></tr>
+            <tr><td>\(O(n^{100})\)</td><td>Polynomial time</td></tr>
+            <tr><td>\(O(2^n)\)</td><td>Exponential time</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>講義 p.49 的表格列出各成長率在不同 \(n\) 下的實際執行時間，例如 \(n=100\) 時 \(2^n\) 需要約 \(4\times10^{13}\) 年。</p>
+
+      <h3 id="big-o-properties">Big-O 的性質</h3>
+      <ul>
+        <li>\(f(n)=O(g(n))\) 表示 \(g(n)\) 是 \(f(n)\) 的上界，例如 \(n=O(n)=O(n^{2.5})=O(n^3)\)，但我們希望 \(g(n)\) 越小越好。</li>
+        <li>Big-O 描述程式的 worst-case 執行時間。</li>
+        <li>講義提問：\(f(n)=O(g(n))\) 是否能推得 \(g(n)=O(f(n))\)？（以問號圖示提問，未附答案）</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>規則</th><th>內容</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td>Rule of Sum</td><td>\(f_1(n)+f_2(n)=O(\max(g_1(n),g_2(n)))\)</td><td>依序執行的敘述</td></tr>
+            <tr><td>Rule of Product</td><td>\(f_1(n)\times f_2(n)=O(g_1(n)\times g_2(n))\)</td><td>巢狀迴圈</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre><span class="pseudo-label">Rule of Product 範例</span><code>for (i=0; i&lt;n; i++) {        // O(n)
+    for (j=0; j&lt;n; j++)       // O(n)
+        sum := sum + 1;        // O(1)
+}                              // → O(n²)</code></pre>
+
+      <h3 id="binary-search">Binary Search 的複雜度</h3>
+      <p>第 1 次迭代搜尋 \(n\) 個值，第 2 次剩 \(n/2\)，第 3 次剩 \(n/4\)，…，第 \(k+1\) 次剩 \(n/2^k\)。當 \(n/2^k=1\) 時搜尋一定結束 → \(n=2^k\)，\(k=\log_2 n\) → worst case 為 \(O(\log_2 n)\)。</p>
+      <p class="src">Session1-Algorithms Handout.pdf p.43–55</p>
+
+      <!-- ===================================================== -->
+      <h2 id="measurement">6. Performance Measurement</h2>
+      <ul>
+        <li>實際執行程式，取得真正的空間與時間需求。</li>
+        <li>程式中量測時間：方法 1 用 <code>clock()</code>（單位 clock ticks）；方法 2 用 <code>time()</code>（單位秒）。</li>
+        <li>量測很短的程式時：重複執行很多次再取平均。</li>
+      </ul>
+      <p class="src">Session1-Algorithms Handout.pdf p.56</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 演算法必須滿足哪五個條件？</summary>
+        <div class="answer">
+          <p>Input（零或多個輸入）、Output（至少一個輸出）、Definiteness（明確）、Finiteness（有限步結束）、Effectiveness（每個指令基本且容易計算）。</p>
+          <p class="src">Session1-Algorithms Handout.pdf p.4</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Space complexity \(S(P)=C+S_P(I)\) 中，\(C\) 與 \(S_P(I)\) 各包含什麼？</summary>
+        <div class="answer">
+          <p>\(C\) 是與輸入輸出無關的固定部分（指令空間、簡單變數、固定大小的結構變數、常數）；\(S_P(I)\) 是取決於問題實例的變動部分（被參照的變數、遞迴堆疊空間）。</p>
+          <p class="src">Session1-Algorithms Handout.pdf p.33</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. \(T_{\text{Sum}}(n)=2n+3\)、\(T_{\text{Rsum}}(n)=2n+2\)，可以說 Rsum 比較快嗎？</summary>
+        <div class="answer">
+          <p>不行。每個 step 的執行時間不同；兩者成長率相同（都是 linear），時間複雜度相同。</p>
+          <p class="src">Session1-Algorithms Handout.pdf p.41–42</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 寫出 Big-O 的定義，並說明為什麼 \(10n^2+4n+2=O(n^2)\)。</summary>
+        <div class="answer">
+          <p>\(f(n)=O(g(n))\) iff 存在 \(c,n_0&gt;0\)，使得對所有 \(n\ge n_0\) 都有 \(f(n)\le c\,g(n)\)。因為對所有 \(n\ge 5\)，\(10n^2+4n+2\le 11n^2\)。</p>
+          <p class="src">Session1-Algorithms Handout.pdf p.44</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 為什麼 Binary Search 的 worst case 是 \(O(\log_2 n)\)？</summary>
+        <div class="answer">
+          <p>每次迭代剩下的資料減半，第 \(k+1\) 次剩 \(n/2^k\)；當 \(n/2^k=1\) 時結束，得 \(k=\log_2 n\)。</p>
+          <p class="src">Session1-Algorithms Handout.pdf p.53</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Session1-Algorithms Handout.pdf</code>　p.1–56（Yi-Shin Chen, Data Structures）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>
