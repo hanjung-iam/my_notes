@@ -446,6 +446,62 @@ button.tag.active .n { color: rgba(255, 255, 255, 0.7); }
   margin: 6px 0;
 }
 
+/* =========================================================
+   示意圖（依講義重畫的 inline SVG，規則見 CLAUDE.md 第 3、5 節）
+   ========================================================= */
+.figure {
+  margin: 16px 0;
+  padding: 16px 12px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.figure-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  justify-content: center;
+}
+.figure-panel { flex: 1 1 260px; max-width: 480px; margin: 0; text-align: center; }
+.figure-row.stack { flex-direction: column; align-items: center; }
+.figure-row.stack .figure-panel { flex: none; width: 100%; max-width: 620px; }
+.figure-panel .panel-title { font-size: 13px; color: var(--text-2); margin-bottom: 4px; }
+.figure svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.figure figcaption { margin-top: 8px; font-size: 13px; color: var(--text-2); text-align: center; }
+.figure figcaption .src { display: block; margin-top: 2px; }
+
+/* 頂點 */
+.g-node { fill: var(--bg); stroke: var(--text-2); stroke-width: 1.5; }
+.g-node.hl { fill: #e7f0f6; stroke: var(--c-blue); }
+.g-node.mark { fill: var(--c-blue); stroke: var(--c-blue); }
+.g-node.mark + .g-text { fill: #fff; }
+.g-node.disc { fill: #e7f0f6; stroke: var(--c-blue); stroke-dasharray: 3 2; }
+.g-node.warn { fill: #fbe9e8; stroke: var(--c-red); }
+.g-edge.orange { stroke: var(--c-orange); stroke-width: 2; }
+.g-edge.purple { stroke: var(--c-purple); stroke-width: 2; }
+/* 邊 */
+.g-edge { stroke: var(--text-3); stroke-width: 1.5; fill: none; }
+.g-edge.hl { stroke: var(--c-blue); stroke-width: 4; }
+.g-edge.alt { stroke: var(--c-green); stroke-width: 4; }
+.g-edge.warn { stroke: var(--c-red); stroke-width: 3; }
+.g-edge.dash { stroke-dasharray: 4 4; }
+.g-arrowhead { fill: var(--text-3); }
+.g-arrowhead.hl { fill: var(--c-blue); }
+.g-arrowhead.alt { fill: var(--c-green); }
+.g-arrowhead.warn { fill: var(--c-red); }
+.g-arrowhead.orange { fill: var(--c-orange); }
+.g-arrowhead.purple { fill: var(--c-purple); }
+/* 收縮的元件（contracted component / 群組） */
+.g-group { stroke: #e7f0f6; stroke-width: 28; stroke-linecap: round; stroke-linejoin: round; fill: #e7f0f6; }
+.g-group.alt { stroke: #e6f2ec; fill: #e6f2ec; }
+.g-group.orange { stroke: #fbecdd; fill: #fbecdd; }
+.g-group.purple { stroke: #f1eaf6; fill: #f1eaf6; }
+/* 文字 */
+.g-text { font-size: 12px; fill: var(--text); text-anchor: middle; dominant-baseline: central; font-family: inherit; }
+.g-weight { font-size: 12px; fill: var(--text-2); text-anchor: middle; dominant-baseline: central; }
+.g-tag { font-size: 13px; fill: var(--c-green); text-anchor: middle; dominant-baseline: central; font-style: italic; }
+.g-note { font-size: 12px; fill: var(--c-orange); text-anchor: middle; dominant-baseline: central; }
+
 /* KaTeX：長公式在框內捲動 */
 .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
 

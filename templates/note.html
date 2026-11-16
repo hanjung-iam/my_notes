@@ -89,6 +89,32 @@
       <!-- Pseudocode（只照來源轉錄） -->
       <pre><span class="pseudo-label">Pseudocode</span><code>{{照來源轉錄}}</code></pre>
 
+      <!-- 示意圖（只能重畫來源中已有的圖；規則見 CLAUDE.md 第 3、5 節）
+           - 顏色只用 class：g-node（頂點，可加 hl / mark）、g-edge（邊，可加 hl / alt / warn / dash）、
+             g-weight（權重）、g-text（頂點內文字）、g-group（群組底色，可加 alt）、g-tag / g-note（標註）
+           - 有向邊：在 <defs> 定義 marker（id 在頁面中唯一），邊加上 marker-end
+           - 單張圖直接放 svg；多個步驟用 figure-row + figure-panel 並排 -->
+      <figure class="figure">
+        <svg viewBox="0 0 300 120" width="345" role="img" aria-label="{{圖的名稱}}">
+          <defs><marker id="{{唯一id}}" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path class="g-arrowhead base" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+          <line class="g-group" x1="40" y1="60" x2="150" y2="30"/>
+          <line class="g-edge hl" x1="40" y1="60" x2="150" y2="30"/>
+          <line class="g-edge" x1="150" y1="30" x2="249" y2="59" marker-end="url(#{{唯一id}})"/>
+          <circle class="g-node" cx="40" cy="60" r="10"/><text class="g-text" x="40" y="60">{{u}}</text>
+          <circle class="g-node" cx="150" cy="30" r="10"/><text class="g-text" x="150" y="30">{{v}}</text>
+          <circle class="g-node" cx="260" cy="62" r="10"/><text class="g-text" x="260" y="62">{{w}}</text>
+          <text class="g-weight" x="90" y="35">{{權重}}</text>
+        </svg>
+        <figcaption>{{這張圖的重點}}<span class="src">{{檔名.pdf}} p.{{頁碼}}</span></figcaption>
+      </figure>
+      <figure class="figure">
+        <div class="figure-row">
+          <div class="figure-panel"><div class="panel-title">{{步驟 1}}</div><svg viewBox="0 0 300 120" width="345" role="img" aria-label="{{步驟 1}}"><!-- … --></svg></div>
+          <div class="figure-panel"><div class="panel-title">{{結果}}</div><svg viewBox="0 0 300 120" width="345" role="img" aria-label="{{結果}}"><!-- … --></svg></div>
+        </div>
+        <figcaption>{{步驟順序或重點}}<span class="src">{{檔名.pdf}} p.{{頁碼}}</span></figcaption>
+      </figure>
+
       <!-- 表格 -->
       <div class="table-wrap">
         <table>
