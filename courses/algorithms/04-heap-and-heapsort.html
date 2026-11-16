@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>堆積與堆積排序 (Heap &amp; Heapsort) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">堆積與堆積排序 (Heap &amp; Heapsort)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>堆積與堆積排序 (Heap &amp; Heapsort)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 04</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-04_240917_221048.pdf</code>、<code>手寫筆記_Sorting_DP.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">堆積</span>
+          <span class="tag">排序</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>Heap</strong>（binary heap）= 滿足 <strong>shape property</strong> 與 <strong>heap property</strong>（節點值 ≤ 子節點值）的 binary tree → root 永遠是最小值。</li>
+          <li>高度 \(h\) 滿足 \(2^{h-1}-1&lt;n\le 2^h-1\) → \(h=\Theta(\log n)\)。</li>
+          <li>Find-Min \(O(1)\)；Insert、Extract-Min 都是 \(O(\log n)\)（每次 swap 移動一層）。</li>
+          <li>Heapsort 的另一種建 heap 方式：把數字直接放進節點，再<strong>由下往上</strong>逐層 Heapify → 建 heap 只要 \(4n=O(n)\)，但排序總時間仍是 \(O(n\log n)\)。</li>
+          <li>用陣列存 heap：節點 \(x\) 的 parent \(\lfloor x/2\rfloor\)、left \(2x\)、right \(2x+1\)，不需要 pointer。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="what-is-heap">1. 什麼是 Heap</h2>
+      <p>Heap（或 binary heap）是滿足下列兩個性質的 binary tree：</p>
+      <ol>
+        <li><strong>Shape Property</strong>：除了最深的一層，每一層都填滿；最深的一層<strong>由左到右</strong>填。</li>
+        <li><strong>Heap Property</strong>：節點的值 ≤ 子節點的值。</li>
+      </ol>
+      <ul>
+        <li>節點數相同的 heap，形狀都一樣。</li>
+        <li>滿足 heap property → <strong>root 永遠是最小值</strong>。</li>
+      </ul>
+      <p class="src">Algo-Lecture-04_240917_221048.pdf p.3–5；手寫筆記_Sorting_DP.pdf p.10</p>
+
+      <h3 id="height">Heap 的高度</h3>
+      <p>令 \(h\) = 有 \(n\) 個節點的 heap 的 node height。上面 \(h-1\) 層全滿、\(h\) 層最多全滿：</p>
+      \[2^{h-1}-1&lt;n\le 2^h-1\quad\Rightarrow\quad h=\Theta(\log n)\]
+      <p>手寫筆記的推導：\(1+2+4+\dots+2^{h-2}&lt;n\le 1+2+4+\dots+2^{h-1}\)，用等比級數 \(\frac{1\cdot(2^{h-1}-1)}{2-1}&lt;n\le\frac{1\cdot(2^h-1)}{2-1}\) 得到上式。</p>
+      <p class="src">Algo-Lecture-04_240917_221048.pdf p.6；手寫筆記_Sorting_DP.pdf p.10</p>
+
+      <!-- ===================================================== -->
+      <h2 id="operations">2. Heap 的操作</h2>
+      <p>Heap 維護一個動態數字集合 \(S\)，支援三種操作：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>操作</th><th>作用</th><th>做法</th><th>時間</th></tr></thead>
+          <tbody>
+            <tr><td>Find-Min</td><td>回傳 \(S\) 的最小值</td><td>最小值永遠在 root</td><td>\(O(1)\)</td></tr>
+            <tr><td>Insert</td><td>加入新數字</td><td>新增節點修正形狀 → 放入新值 → 修正 heap property</td><td>\(O(\log n)\)</td></tr>
+            <tr><td>Extract-Min</td><td>移除最小值</td><td>最後一個節點的值複製到 root → 移除最後節點 → 修正 heap property</td><td>\(O(\log n)\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Algo-Lecture-04_240917_221048.pdf p.7–8；手寫筆記_Sorting_DP.pdf p.10</p>
+
+      <h3 id="insert">Insert</h3>
+      <ol>
+        <li><strong>Restore Shape Property</strong>：建立一個含新值的節點，加到 heap 的正確位置。</li>
+        <li><strong>Restore Heap Property</strong>：標記新節點，只有它的 parent 可能違反 heap property；若違反就和 parent 交換，交換後只有它新的 parent 可能違反；直到滿足為止。</li>
+      </ol>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：插入 5</span>
+          原 heap（逐層）：3 ／ 8, 4 ／ 23, 13, 12, 24 ／ 38, 43。5 先接在 23 下面 → 5 &lt; 23 交換 → 5 &lt; 8 交換 → 5 &gt; 3 停止。結果：3 ／ 5, 4 ／ 8, 13, 12, 24 ／ 38, 43, 23。
+        </div>
+      </div>
+      <p>每次交換，新值往上移一層 → \(O(\log n)\) 次交換，每次 \(O(1)\) → Insert 為 \(O(\log n)\)。</p>
+      <p class="src">Algo-Lecture-04_240917_221048.pdf p.9–13</p>
+
+      <h3 id="extract-min">Extract-Min</h3>
+      <ol>
+        <li>把最後一個節點的內容複製到 root。</li>
+        <li>移除最後一個節點，修正形狀。</li>
+        <li>標記 root，只有它可能違反 heap property；若違反就和<strong>較小的 child</strong> 交換，直到滿足為止。</li>
+      </ol>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子</span>
+          同一個 heap 做 Extract-Min：最後節點 38 複製到 root → 38 和較小的 child 4 交換 → 再和較小的 child 12 交換 → 停止。結果：4 ／ 8, 12 ／ 23, 13, 38, 24 ／ 43。
+        </div>
+      </div>
+      <p>每次交換往下移一層 → Extract-Min 為 \(O(\log n)\)。</p>
+      <p class="src">Algo-Lecture-04_240917_221048.pdf p.14–18</p>
+
+      <!-- ===================================================== -->
+      <h2 id="heapsort">3. Heapsort</h2>
+      <h3 id="sort-by-heap">用 Heap 排序</h3>
+      <ol>
+        <li>把 \(n\) 個數字一個一個 Insert 進 heap；</li>
+        <li>一個一個 Extract-Min。</li>
+      </ol>
+      <p>兩步都是 \(O(n\log n)\) → 總時間 \(O(n\log n)\)。</p>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          手寫筆記 p.11 在「Insert the numbers one by one to a heap」旁寫 \(O(n)\)；講義 p.19 寫兩個步驟（逐一 Insert、逐一 Extract-Min）都是 \(O(n\log n)\)。請對照確認。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-04_240917_221048.pdf p.19；手寫筆記_Sorting_DP.pdf p.11</p>
+
+      <h3 id="heapify">另一種建 Heap 的方式：Heapify</h3>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Lemma</span>
+          若 binary tree \(T\) 的 root 的兩個子樹 \(L\)、\(R\) 都是 heap，則可以在 \(O(\text{height}(T))\) 時間內讓 \(T\) 滿足 heap property。
+        </div>
+      </div>
+      <p>證明（這個操作記為 <strong>Heapify(u)</strong>）：和 Extract-Min 修正 heap property 的方法一樣 — 比較 root \(r\) 與 \(L\)、\(R\) 的 root \(r_L\)、\(r_R\)；若違反 heap property，就把 \(r\) 和 \(r_L\)、\(r_R\) 中較小的交換，再遞迴修正。每一步 \(r\) 往下一層 → 時間 \(O(\text{height}(T))\)（講義寫為 \(2\cdot\max\{\text{height}(L),\text{height}(R)\}\)）。</p>
+      <p><strong>Alternative Step 1</strong>：</p>
+      <ol>
+        <li>先把 \(n\) 個數字放進 heap 的節點，不管 heap property。</li>
+        <li>由<strong>最底層往上</strong>逐層處理每個節點（用上面的 lemma）→ 處理完節點 \(x\) 後，以 \(x\) 為 root 的子樹變成 heap。</li>
+      </ol>
+      <p>用這種方式得到的排序演算法稱為 <strong>Heapsort</strong>；建 heap 比較快，但總時間仍是 \(O(n\log n)\)。</p>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子（講義與手寫筆記）</span>
+          初始：12 ／ 4, 13 ／ 43, 23, 8, 3 ／ 24, 38。由下往上 heapify：以 43 為 root 的子樹 → 24 上移（4 ／ 24, 23 ／ 43, 38）；以 13 為 root 的子樹 → 3 上移；最後 heapify 整棵樹 → 結果：3 ／ 4, 8 ／ 24, 23, 12, 13 ／ 43, 38。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-04_240917_221048.pdf p.20–28；手寫筆記_Sorting_DP.pdf p.11</p>
+
+      <h3 id="heapify-time">Alternative Step 1 的時間</h3>
+      <p>由下往上標層數（最底層 = Level 1）：Level 1 最多 \(n\) 個節點、Level 2 最多 \(n/2\)、Level 3 最多 \(n/4\)…；Level \(k\) 的節點最多往下比較 \(k\) 次（手寫筆記：「最多向下比較的次數」）。</p>
+      \[\text{Total time}\le n\cdot 1+\frac{n}{2}\cdot 2+\frac{n}{4}\cdot 3+\frac{n}{8}\cdot 4+\dots=n\left(1+2\left(\tfrac12\right)+3\left(\tfrac12\right)^2+4\left(\tfrac12\right)^3+\dots\right)=4n\]
+      <p>因為 \(1+x+x^2+\dots=(1-x)^{-1}\)，微分得 \(1+2x+3x^2+\dots=(1-x)^{-2}\)，代入 \(x=\frac12\) 得 4。</p>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          手寫筆記 p.11 的級數第三項寫成「\(3(\frac{n}{4})\)」，講義 p.29 為 \(3(\frac12)^2\)。上方依講義寫法整理。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-04_240917_221048.pdf p.29；手寫筆記_Sorting_DP.pdf p.11</p>
+
+      <!-- ===================================================== -->
+      <h2 id="array">4. 用陣列表示 Heap</h2>
+      <ul>
+        <li>前面的結果其實不需要「最深層由左到右填」這個限制 — 為什麼要有它？</li>
+        <li>把節點逐層、每層由左到右編號（root = 1）→ \(n\) 個節點的 heap 剛好用到編號 \(1,2,\dots,n\) → 可以<strong>存在陣列裡</strong>。</li>
+        <li>例：上面的 heap 存成 3, 8, 4, 23, 13, 12, 24, 38, 43。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>節點 index \(x\) 的</th><th>index</th></tr></thead>
+          <tbody>
+            <tr><td>parent</td><td>\(\lfloor x/2\rfloor\)</td></tr>
+            <tr><td>left child</td><td>\(2x\)</td></tr>
+            <tr><td>right child</td><td>\(2x+1\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>→ 不需要使用 pointer。</p>
+      <p class="src">Algo-Lecture-04_240917_221048.pdf p.30–33</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. Heap 必須滿足哪兩個性質？</summary>
+        <div class="answer">
+          <p>Shape property：除最深層外每層都填滿，最深層由左到右填。Heap property：節點值 ≤ 子節點值。</p>
+          <p class="src">Algo-Lecture-04_240917_221048.pdf p.3</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Extract-Min 修正 heap property 時，要和哪個 child 交換？為什麼時間是 \(O(\log n)\)？</summary>
+        <div class="answer">
+          <p>和<strong>較小的</strong> child 交換。每次交換往下一層，heap 高度為 \(\Theta(\log n)\)，所以最多 \(O(\log n)\) 次交換，每次 \(O(1)\)。</p>
+          <p class="src">Algo-Lecture-04_240917_221048.pdf p.16, p.18</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 用 Heapify 由下往上建 heap，總時間為什麼是 \(O(n)\)？</summary>
+        <div class="answer">
+          <p>Level \(k\)（由下往上數）最多 \(n/2^{k-1}\) 個節點，每個最多花 \(k\) 步；總和 \(n(1+2\cdot\frac12+3\cdot\frac14+\dots)=4n\)。</p>
+          <p class="src">Algo-Lecture-04_240917_221048.pdf p.29</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 陣列中 index 為 \(x\) 的節點，它的 parent、left child、right child 的 index 是多少？</summary>
+        <div class="answer">
+          <p>parent \(\lfloor x/2\rfloor\)、left child \(2x\)、right child \(2x+1\)。</p>
+          <p class="src">Algo-Lecture-04_240917_221048.pdf p.33</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. \(n\) 個節點的 heap，高度 \(h\) 滿足什麼不等式？</summary>
+        <div class="answer">
+          <p>\(2^{h-1}-1&lt;n\le 2^h-1\)，所以 \(h=\Theta(\log n)\)。</p>
+          <p class="src">Algo-Lecture-04_240917_221048.pdf p.6</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-04_240917_221048.pdf</code>　p.1–33（CS 4311 Introduction to Algorithms, Lecture 04）</li>
+        <li><code>手寫筆記_Sorting_DP.pdf</code>　p.10–11</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

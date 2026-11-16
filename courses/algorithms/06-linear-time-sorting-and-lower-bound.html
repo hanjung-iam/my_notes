@@ -39,7 +39,7 @@
           <dt>課程</dt><dd>演算法</dd>
           <dt>單元</dt><dd>Lecture 06–07</dd>
           <dt>整理日期</dt><dd>2026-11-16</dd>
-          <dt>來源</dt><dd><code>Algo-Lecture-06.pdf</code>、<code>Algo-Lecture-07.pdf</code></dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-06.pdf</code>、<code>Algo-Lecture-07.pdf</code>、<code>手寫筆記_Sorting_DP.pdf</code></dd>
         </dl>
         <div class="tags">
           <span class="tag">排序</span>
@@ -244,6 +244,42 @@
       <p class="src">Algo-Lecture-07.pdf p.2–13</p>
 
       <!-- ===================================================== -->
+      <h2 id="handwritten">5. 手寫筆記補充</h2>
+      <h3 id="hw-n-square">思考題：\([0,n^2]\) 中的 \(n\) 個整數如何 \(O(n)\) 排序</h3>
+      <p>手寫筆記寫下的做法（講義未附答案）：</p>
+      <ol>
+        <li>一次排序一位，從 LSB 開始（即 Radix Sort）；</li>
+        <li>排序時對 \(n\) 取 modulo，讓每一位都只有 \(n\) 個類別。</li>
+      </ol>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.14</p>
+
+      <h3 id="hw-bucket">Bucket Sort 例子的細節</h3>
+      <p>範圍 [0, 1000)，輸入 235, 127, 478, 873, 525, 170, 35, 990（8 個數）：</p>
+      <ol>
+        <li>每個 bucket 的長度：\(1000/8=125\)。</li>
+        <li>建立 8 個 buckets：0–125、126–250、251–375、376–500、501–625、626–750、751–875、876–999。</li>
+        <li>分配：35 │ 235, 170, 127 │ — │ 478 │ 525 │ — │ 873 │ 990。</li>
+        <li>各 bucket 內排序：第 2 個 bucket 變成 127, 170, 235。</li>
+        <li>合併：35, 127, 170, 235, 478, 525, 873, 990。</li>
+      </ol>
+      <p>手寫筆記：\(n\) 個整數、\(n\) 個 buckets → 平均每個 bucket 1 個（很少）元素，bucket 內排序通常很快 → expected running time \(O(n)\)。</p>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          手寫筆記 p.15 第 1 步寫成「\(100/8\to 125\)」，範圍是 [0, 1000)，上方寫為 \(1000/8=125\)，請對照確認。
+        </div>
+      </div>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.14–15</p>
+
+      <h3 id="hw-lower-bound">下界的兩種說法</h3>
+      <ul>
+        <li>任何 comparison sort 都要 \(\Omega(n\lg n)\) 時間；任何 comparison sort 都要用 \(\Omega(n\lg n)\) 次比較來排序。</li>
+        <li>Decision tree 至少有 \(n!\) 個 leaves（\(n\) 個元素的所有排列）→ node-height \(\ge\lg(n!)\ge\frac n2\lg\frac n2=\Omega(n\lg n)\)。</li>
+      </ul>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.16</p>
+
+      <!-- ===================================================== -->
       <h2 id="quiz">自我測驗</h2>
       <details class="quiz">
         <summary>Q1. 什麼是 stable 的排序？Counting Sort 是 stable 的嗎？</summary>
@@ -285,6 +321,7 @@
       <ul class="source-list">
         <li><code>Algo-Lecture-06.pdf</code>　p.1–35（Linear-Time Sorting）</li>
         <li><code>Algo-Lecture-07.pdf</code>　p.1–13（Lower Bound of Comparison Sort）</li>
+        <li><code>手寫筆記_Sorting_DP.pdf</code>　p.13–16</li>
       </ul>
     </article>
   </div>

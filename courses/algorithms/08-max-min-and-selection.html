@@ -39,7 +39,7 @@
           <dt>課程</dt><dd>演算法</dd>
           <dt>單元</dt><dd>Lecture 08</dd>
           <dt>整理日期</dt><dd>2026-11-16</dd>
-          <dt>來源</dt><dd><code>Algo-Lecture-08.pdf</code></dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-08.pdf</code>、<code>手寫筆記_Sorting_DP.pdf</code></dd>
         </dl>
         <div class="tags">
           <span class="tag">下界</span>
@@ -180,6 +180,39 @@ Step 3: Compare m1 and m2, return max of them;
       <p class="src">Algo-Lecture-08.pdf p.24–33</p>
 
       <!-- ===================================================== -->
+      <h2 id="handwritten">5. 手寫筆記補充</h2>
+      <h3 id="hw-max-proof">找最大值 Method II：\(T(n)=n-1\) 的歸納證明</h3>
+      <ol>
+        <li>假設 \(T(n)\le cn-1\) 對 \(n=1,2,\dots,k\) 成立。</li>
+        <li>當 \(n=k+1\)：
+          \[\begin{aligned}
+          T(n)&amp;=T(\lfloor n/2\rfloor)+T(\lceil n/2\rceil)+1\le\big(c\lfloor n/2\rfloor-1\big)+\big(c\lceil n/2\rceil-1\big)+1\\
+          &amp;=c\big(\lfloor n/2\rfloor+\lceil n/2\rceil\big)-1=cn-1
+          \end{aligned}\]
+          → induction case 成立，比較次數 = \(n-1\)。</li>
+      </ol>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.17</p>
+
+      <h3 id="hw-select">Select Method I 的 worst case 與 Method II 的遞迴樹</h3>
+      <ul>
+        <li>Method I 的 worst case \(T(n)=n+T(n-1)=\Theta(n^2)\)（其中 \(n\) 來自 Step 2）：pivot 無法適當地縮小問題大小。</li>
+        <li>Method II 中，「Find \(m\)」花 \(n+T(\frac n5)\)、「分出 \(S_{small}\)／\(S_{large}\)」花 \(n\)、「在 \(S_{small}\) 或 \(S_{large}\) 中找目標」花 \(T(\frac{3n}{4})\)。</li>
+      </ul>
+      <p>手寫筆記用遞迴樹解 \(T(n)=T(\frac n5)+T(\frac{3n}{4})+2n\)，\(T(1)=1\)：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>層</th><th>節點</th><th>這一層要加的量</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>\(T(n)\)</td><td>\(2n\)</td></tr>
+            <tr><td>2</td><td>\(T(\frac n5)\)、\(T(\frac{3n}{4})\)</td><td>\(2(\frac n5)+2(\frac{3n}{4})=\frac{19}{10}n\)</td></tr>
+            <tr><td>3</td><td>\(T(\frac{n}{25})\)、\(T(\frac{3n}{20})\)、\(T(\frac{3n}{20})\)、\(T(\frac{9n}{16})\)</td><td>\(2(\frac{n}{25})+4(\frac{3n}{20})+2(\frac{9n}{16})=\frac{361}{200}n\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>每層加的量越來越小，總和被 \(2n\) 的常數倍 bound 住 → \(O(n)\)。</p>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.19–20</p>
+
+      <!-- ===================================================== -->
       <h2 id="quiz">自我測驗</h2>
       <details class="quiz">
         <summary>Q1. 為什麼找最大值至少需要 \(n-1\) 次比較？</summary>
@@ -220,6 +253,7 @@ Step 3: Compare m1 and m2, return max of them;
       <h2 id="sources">來源</h2>
       <ul class="source-list">
         <li><code>Algo-Lecture-08.pdf</code>　p.1–33（CS 4311 Introduction to Algorithms, Lecture 08）</li>
+        <li><code>手寫筆記_Sorting_DP.pdf</code>　p.17–20</li>
       </ul>
     </article>
   </div>

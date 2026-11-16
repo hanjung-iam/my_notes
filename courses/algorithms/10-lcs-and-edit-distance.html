@@ -39,7 +39,7 @@
           <dt>課程</dt><dd>演算法</dd>
           <dt>單元</dt><dd>Lecture 10</dd>
           <dt>整理日期</dt><dd>2026-11-16</dd>
-          <dt>來源</dt><dd><code>Algo-Lecture-10.pdf</code></dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-10.pdf</code>、<code>手寫筆記_Sorting_DP.pdf</code></dd>
         </dl>
         <div class="tags">
           <span class="tag">動態規劃</span>
@@ -183,6 +183,42 @@ T = f_actu_al</code></pre>
       <p class="src">Algo-Lecture-10.pdf p.24–26</p>
 
       <!-- ===================================================== -->
+      <h2 id="handwritten">6. 手寫筆記補充</h2>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：S = RANDOM，T = DORMITORY</span>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th></th><th>D</th><th>O</th><th>R</th><th>M</th><th>I</th><th>T</th><th>O</th><th>R</th><th>Y</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>R</td><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+                <tr><td>A</td><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+                <tr><td>N</td><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+                <tr><td>D</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+                <tr><td>O</td><td>1</td><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td></tr>
+                <tr><td>M</td><td>1</td><td>2</td><td>2</td><td>3</td><td>3</td><td>3</td><td>3</td><td>3</td><td>3</td></tr>
+              </tbody>
+            </table>
+          </div>
+          LLCS = <strong>3</strong>。從右下角 backtrack：沿著 M 列往左到 (M, M)，斜上到 (O, O)，再往左、斜上到 (D, D) → LCS = <strong>DOM</strong>。
+        </div>
+      </div>
+      <ul>
+        <li>這個方法用 \(O(nm)\) 的額外空間求 LLCS。事實上只需要記錄前一列，因為新的一列只依賴正上方那一列。</li>
+      </ul>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          手寫筆記 p.21 寫只記錄前一列「only need \(O(\min(n,m))\) extra space」；講義 p.22 寫逐列填表需要 \(O(m)\)，並把「能否只用 \(O(\min\{n,m\})\)」當作提問。請對照確認。
+        </div>
+      </div>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.20–21</p>
+
+      <!-- ===================================================== -->
       <h2 id="quiz">自我測驗</h2>
       <details class="quiz">
         <summary>Q1. 當 \(S[n]=T[m]\) 時，\(\text{LLCS}(S,T)\) 等於什麼？</summary>
@@ -223,6 +259,7 @@ T = f_actu_al</code></pre>
       <h2 id="sources">來源</h2>
       <ul class="source-list">
         <li><code>Algo-Lecture-10.pdf</code>　p.1–26（CS 4311 Introduction to Algorithms, Lecture 10）</li>
+        <li><code>手寫筆記_Sorting_DP.pdf</code>　p.20–21</li>
       </ul>
     </article>
   </div>

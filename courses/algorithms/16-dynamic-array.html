@@ -39,7 +39,7 @@
           <dt>課程</dt><dd>演算法</dd>
           <dt>單元</dt><dd>Lecture 16</dd>
           <dt>整理日期</dt><dd>2026-11-16</dd>
-          <dt>來源</dt><dd><code>Algo-Lecture-16.pdf</code></dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-16.pdf</code>、<code>手寫筆記_Sorting_DP.pdf</code></dd>
         </dl>
         <div class="tags">
           <span class="tag">攤銷分析</span>
@@ -140,6 +140,19 @@
       <p class="src">Algo-Lecture-16.pdf p.14</p>
 
       <!-- ===================================================== -->
+      <h2 id="handwritten">5. 手寫筆記補充</h2>
+      <h3 id="hw-space">空間使用的說明</h3>
+      <ul>
+        <li>只有 Insert 時：最多浪費常數空間（一開始還沒有 item 插入時，浪費的就是初始陣列的空間）或陣列一半的空間（因為原本 \(k\) 的空間滿了才會增加成 \(2k\)，此時陣列至少有 \(k\) 個元素）。</li>
+        <li>加入 Delete 後：最多浪費常數空間或陣列 75% 的空間。例：初始大小 100 的陣列擴大到 200 時，陣列中至少有 100 個 items；若 items 剩下約 50 個，陣列就會被縮小 → 此時有 75% 的空間被浪費。</li>
+      </ul>
+      <h3 id="hw-aggregate">Aggregate Method 的計算</h3>
+      <p>設 \(n=100\times 2^k\)，項目被搬移的總次數：</p>
+      \[100+200+400+\dots+100\times 2^k=100(2^0+2^1+\dots+2^k)=100\times\frac{2^0(2^{k+1}-1)}{2-1}\le 100\times 2\times 2^k=2n\]
+      <p>→ 搬移次數 \(\le 2n\)，Insert 的攤銷成本 \(=O(1)\)。</p>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.27–28</p>
+
+      <!-- ===================================================== -->
       <h2 id="quiz">自我測驗</h2>
       <details class="quiz">
         <summary>Q1. 只有 Insert 時，陣列滿了要怎麼處理？空間使用如何？</summary>
@@ -173,6 +186,7 @@
       <h2 id="sources">來源</h2>
       <ul class="source-list">
         <li><code>Algo-Lecture-16.pdf</code>　p.1–14（CS 4311 Introduction to Algorithms, Lecture 16）</li>
+        <li><code>手寫筆記_Sorting_DP.pdf</code>　p.27–28</li>
       </ul>
     </article>
   </div>

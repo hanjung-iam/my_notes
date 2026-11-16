@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>二項式堆積 (Binomial Heap) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">二項式堆積 (Binomial Heap)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>二項式堆積 (Binomial Heap)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 17</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-17_241127_151056.pdf</code>、<code>手寫筆記_binomial heap.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">堆積</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>Binary heap 很難把兩個 heap 合併；<strong>Binomial Heap</strong> 支援有效率的 <strong>Union</strong>，每個操作仍是 \(O(\log n)\)。</li>
+          <li>Binomial tree \(B_k\)：\(B_0\) 是單一節點；\(B_k\) 由兩棵 \(B_{k-1}\) 連接而成（一個 root 變成另一個 root 的 leftmost child）。</li>
+          <li>\(B_k\) 有 \(2^k\) 個節點、高度 \(k\)、root 的 degree 為 \(k\)、第 \(j\) 層有 \(\binom{k}{j}\) 個節點。</li>
+          <li>每種 order 最多一棵 \(B_k\) → 組成方式對應 \(n\) 的<strong>二進位表示</strong>，最多 \(O(\log n)\) 棵樹。</li>
+          <li>Union 像二進位加法；Insert = 和只有一個 \(B_0\) 的 heap 做 Union；Delete = Decrease-Key 到 \(-\infty\) 再 Extract-Min。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="motivation">1. 為什麼需要 Binomial Heap</h2>
+      <ul>
+        <li>Binary heap 支援有效率的 Insert、Extract-Min，也支援 <strong>Decrease-Key</strong>（把某個項目的值改小）；\(n\) 個項目時每個操作 \(O(\log n)\)。</li>
+        <li>但有兩個 binary heap 時，很難把它們的項目合併成一個 heap。</li>
+        <li>Binomial Heap 是更有彈性的 heap，支援合併兩個 heap（<strong>Union</strong>），每個操作仍是 \(O(\log n)\)。</li>
+        <li>它不是只用一棵樹，而是維護最多 \(O(\log n)\) 棵樹 → 更有彈性。</li>
+      </ul>
+      <p class="src">Algo-Lecture-17_241127_151056.pdf p.3–4；手寫筆記_binomial heap.pdf p.1</p>
+
+      <!-- ===================================================== -->
+      <h2 id="binomial-tree">2. Binomial Tree</h2>
+      <p>Binomial Heap 中的每棵 component tree 都是 <strong>binomial tree</strong>。Order 為 \(k\) 的 binomial tree \(B_k\)：</p>
+      <ul>
+        <li>\(B_0\) 是只有一個節點的樹。</li>
+        <li>\(k&gt;0\) 時，\(B_k\) 由兩棵 \(B_{k-1}\) 連接而成：其中一棵的 root 變成另一棵 root 的 <strong>leftmost child</strong>。</li>
+      </ul>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Lemma（證明用數學歸納法）</span>
+          對 order 為 \(k\) 的 binomial tree \(B_k\)：
+          <ul>
+            <li>節點數 \(=2^k\)，高度 \(=k\)，root 的 degree \(=k\)</li>
+            <li>root 的子樹由左到右剛好是 \(B_{k-1},B_{k-2},\dots,B_0\)</li>
+            <li>第 \(j\) 層剛好有 \(\binom{k}{j}\) 個節點</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子（手寫筆記）</span>
+          \(B_3\)：第 1 層有 \(\binom{3}{1}=3\) 個節點，第 2 層有 \(\binom{3}{2}=3\) 個節點。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-17_241127_151056.pdf p.5–7；手寫筆記_binomial heap.pdf p.1</p>
+
+      <!-- ===================================================== -->
+      <h2 id="binomial-heap">3. Binomial Heap 的定義</h2>
+      <ul>
+        <li>有 \(n\) 個項目的 Binomial Heap 由一組 binomial tree 組成，一個節點對應一個項目。</li>
+        <li>每棵 binomial tree 中的節點滿足 heap property：\(\text{value}(u)&gt;\text{value}(\text{parent}(u))\)。</li>
+        <li>每個 \(k\) <strong>最多一棵</strong> \(B_k\) → component tree 是唯一的，對應 \(n\) 的二進位表示。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子</span>
+          \(13=1101_{(2)}\) → 由 \(B_3\)、\(B_2\)、\(B_0\) 組成：\(B_0\) = {12}；\(B_2\) 的 root 為 8（子節點 25、13，25 下有 41）；\(B_3\) 的 root 為 15（子節點 19、32、16…）。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-17_241127_151056.pdf p.8–9；手寫筆記_binomial heap.pdf p.1</p>
+
+      <!-- ===================================================== -->
+      <h2 id="operations">4. 操作</h2>
+      <h3 id="find-min">Find-Min 與 Decrease-Key</h3>
+      <ul>
+        <li>Heap 中有 \(O(\log n)\) 棵樹 → <strong>Find-Min</strong> 檢查每棵樹的 root → \(O(\log n)\)；若維護一個 minimum pointer → \(O(1)\)。</li>
+        <li>每棵 \(B_k\) 的 \(k=O(\log n)\) → <strong>Decrease-Key</strong> 反覆把節點和 parent 交換來修正 heap property → \(O(\text{tree height})=O(\log n)\)。</li>
+      </ul>
+      <p class="src">Algo-Lecture-17_241127_151056.pdf p.10；手寫筆記_binomial heap.pdf p.2</p>
+
+      <h3 id="union">Union</h3>
+      <ul>
+        <li>合併 \(H_1\) 與 \(H_2\)：依 order 由小到大處理 component trees。</li>
+        <li>遇到兩棵 order 相同的 \(B_k\)，就把它們的 root 連起來形成 \(B_{k+1}\)；兩個 root 中<strong>值較小的</strong>成為新的 root。</li>
+        <li>假設每個 heap 的 component tree 依 order 由小到大排好 → Union 花 \(O(\log n)\)（類比二進位加法）。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：Union 5 個節點與 13 個節點的 heap</span>
+          \(H_1\)：\(B_0\)={12}、\(B_2\)(root 8)、\(B_3\)(root 15)；\(H_2\)：\(B_0\)={4}、\(B_2\)(root 9)。
+          <ol>
+            <li>k = 0：連接兩棵 \(B_0\) → \(B_1\)（root 4，child 12）</li>
+            <li>k = 2：連接兩棵 \(B_2\)（root 8 與 9）→ \(B_3\)（root 8）</li>
+            <li>k = 3：連接兩棵 \(B_3\)（root 8 與 15）→ \(B_4\)（root 8）</li>
+          </ol>
+          結果：\(B_1\)(root 4) 與 \(B_4\)(root 8)。
+        </div>
+      </div>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          手寫筆記 p.2–3 的 Union 例子中，\(H_1\) 的 \(B_3\) root 在原圖寫 15，但在「1. link \(B_0\)」之後的圖寫成 13，「3. link \(B_3\)」的結果把 13 畫在 \(B_4\) 的 root；講義 p.15 的結果是 root 為 8。上方依講義整理。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-17_241127_151056.pdf p.11–16；手寫筆記_binomial heap.pdf p.2–3</p>
+
+      <h3 id="insert">Insert</h3>
+      <p>建立只含一棵 \(B_0\)（存 \(x\)）的 heap \(H'\)，再把 \(H\) 與 \(H'\) 做 Union → \(O(\log n)\)。</p>
+      <p class="src">Algo-Lecture-17_241127_151056.pdf p.16；手寫筆記_binomial heap.pdf p.2</p>
+
+      <h3 id="extract-min">Extract-Min</h3>
+      <pre><span class="pseudo-label">Extract-Min(H)</span><code>1. Find the tree Bj containing the minimum
+2. Detach Bj from H, so that H becomes H1
+3. Remove root from Bj, so that it becomes H2
+   (with j component trees)
+4. Union H1 with H2</code></pre>
+      <p>→ \(O(\log n)\)。</p>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子（13 個節點的 heap）</span>
+          最小值 8 在 \(B_2\) → \(H_1\) = {12}、\(B_3\)(root 15)；移除 8 後 \(H_2\) = {25–41}、{13}。Union：先連接兩棵 \(B_0\)（12、13）→ \(B_1\)(root 12)；再連接兩棵 \(B_1\)（12 與 25）→ \(B_2\)(root 12)。結果：\(B_2\)(root 12) 與 \(B_3\)(root 15)。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-17_241127_151056.pdf p.17–20；手寫筆記_binomial heap.pdf p.3</p>
+
+      <h3 id="delete">Delete</h3>
+      <ol>
+        <li>對 \(x\) 做 Decrease-Key，把值設為 \(-\infty\)；</li>
+        <li>做 Extract-Min。</li>
+      </ol>
+      <p>→ \(O(\log n)\)。</p>
+      <p class="src">Algo-Lecture-17_241127_151056.pdf p.21；手寫筆記_binomial heap.pdf p.3</p>
+
+      <!-- ===================================================== -->
+      <h2 id="summary">5. 操作時間整理</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>操作</th><th>時間</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td>Find-Min</td><td>\(O(\log n)\)／\(O(1)\)</td><td>檢查每棵樹的 root；維護 minimum pointer 時為 \(O(1)\)</td></tr>
+            <tr><td>Insert</td><td>\(O(\log n)\)</td><td>和單一 \(B_0\) 做 Union</td></tr>
+            <tr><td>Decrease-Key</td><td>\(O(\log n)\)</td><td>和 parent 反覆交換</td></tr>
+            <tr><td>Union</td><td>\(O(\log n)\)</td><td>同 order 的樹兩兩連接</td></tr>
+            <tr><td>Extract-Min</td><td>\(O(\log n)\)</td><td>拆出 \(B_j\)、移除 root、再 Union</td></tr>
+            <tr><td>Delete</td><td>\(O(\log n)\)</td><td>Decrease-Key 到 \(-\infty\) + Extract-Min</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Algo-Lecture-17_241127_151056.pdf p.10, p.16–17, p.21；手寫筆記_binomial heap.pdf p.2–3</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. \(B_k\) 是怎麼由較小的 binomial tree 組成的？</summary>
+        <div class="answer">
+          <p>由兩棵 \(B_{k-1}\) 連接而成，一棵的 root 成為另一棵 root 的 leftmost child。</p>
+          <p class="src">Algo-Lecture-17_241127_151056.pdf p.5</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. \(B_k\) 有幾個節點？高度、root 的 degree 是多少？第 \(j\) 層有幾個節點？</summary>
+        <div class="answer">
+          <p>\(2^k\) 個節點、高度 \(k\)、root degree \(k\)、第 \(j\) 層有 \(\binom{k}{j}\) 個節點。</p>
+          <p class="src">Algo-Lecture-17_241127_151056.pdf p.7</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 有 13 個項目的 binomial heap 由哪些 binomial tree 組成？為什麼？</summary>
+        <div class="answer">
+          <p>\(13=1101_{(2)}\)，所以由 \(B_3\)、\(B_2\)、\(B_0\) 組成；每種 order 最多一棵，組成方式對應 \(n\) 的二進位表示。</p>
+          <p class="src">Algo-Lecture-17_241127_151056.pdf p.8–9</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. Union 時遇到兩棵相同 order 的 \(B_k\) 要怎麼做？</summary>
+        <div class="answer">
+          <p>把兩個 root 連起來形成 \(B_{k+1}\)，值較小的 root 成為新的 root。</p>
+          <p class="src">Algo-Lecture-17_241127_151056.pdf p.11</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 如何用其他操作完成 Delete？</summary>
+        <div class="answer">
+          <p>先對 \(x\) 做 Decrease-Key 把值設成 \(-\infty\)，再做 Extract-Min，共 \(O(\log n)\)。</p>
+          <p class="src">Algo-Lecture-17_241127_151056.pdf p.21</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-17_241127_151056.pdf</code>　p.1–21（CS 4311 Introduction to Algorithms, Lecture 17）</li>
+        <li><code>手寫筆記_binomial heap.pdf</code>　p.1–3</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

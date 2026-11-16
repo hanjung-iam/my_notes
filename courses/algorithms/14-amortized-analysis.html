@@ -39,7 +39,7 @@
           <dt>課程</dt><dd>演算法</dd>
           <dt>單元</dt><dd>Lecture 14–15</dd>
           <dt>整理日期</dt><dd>2026-11-16</dd>
-          <dt>來源</dt><dd><code>Algo-Lecture-14.pdf</code>、<code>Algo-Lecture-15.pdf</code></dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-14.pdf</code>、<code>Algo-Lecture-15.pdf</code>、<code>手寫筆記_Sorting_DP.pdf</code></dd>
         </dl>
         <div class="tags">
           <span class="tag">攤銷分析</span>
@@ -214,6 +214,26 @@
       <p class="src">Algo-Lecture-15.pdf p.23</p>
 
       <!-- ===================================================== -->
+      <h2 id="handwritten">6. 手寫筆記補充</h2>
+      <ul>
+        <li><strong>定義</strong>：amortized analysis 是分析演算法複雜度（執行時需要多少資源，特別是時間或記憶體）的方法：分析每個操作的執行時間，算出 worst case 所需的時間，再取平均。</li>
+        <li><strong>Aggregate method</strong>：分析 \(n\) 次運行的總時間，計算 upper bound \(T(n)\) 再除以 \(n\)。</li>
+        <li><strong>Potential method</strong> 的直覺：\(\Phi_i\) 像是帳戶剩下的 cost；\(\Phi_{i-1}-\Phi_i\) 就是可以把帳戶中多的 potential 拿來用。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Operation</th><th>Actual cost</th><th>Amortized cost</th><th>說明（手寫筆記）</th></tr></thead>
+          <tbody>
+            <tr><td>Push</td><td>1</td><td>2</td><td>用 1 支付實際成本，1 存起來</td></tr>
+            <tr><td>Pop</td><td>1</td><td>1</td><td>—</td></tr>
+            <tr><td>SuperPop</td><td>1 + #removed items</td><td>1</td><td>用這個 1 支付實際成本中的 1；移除項目的部分用 Push 時存下的 excess 支付</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>→ 攤銷成本永遠足夠支付實際成本。（Accounting method，Super Stack）</p>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.23–26</p>
+
+      <!-- ===================================================== -->
       <h2 id="quiz">自我測驗</h2>
       <details class="quiz">
         <summary>Q1. 為什麼 Super Stack 執行 \(n\) 個操作的總時間是 \(O(n)\)，而不是 \(O(n^2)\)？</summary>
@@ -255,6 +275,7 @@
       <ul class="source-list">
         <li><code>Algo-Lecture-14.pdf</code>　p.1–14（Aggregate Method）</li>
         <li><code>Algo-Lecture-15.pdf</code>　p.1–23（Accounting Method、Potential Method）</li>
+        <li><code>手寫筆記_Sorting_DP.pdf</code>　p.23–26</li>
       </ul>
     </article>
   </div>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>互斥集合 (Disjoint Sets: Union-Find) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">互斥集合 (Disjoint Sets: Union-Find)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>互斥集合 (Disjoint Sets: Union-Find)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 20–21</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-20_241204_113808.pdf</code>、<code>Algo-Lecture-21_241201_124707.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">資料結構</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>Disjoint sets 支援 <strong>Make-Set(x)</strong>、<strong>Union(x, y)</strong>、<strong>Find(x)</strong>（回傳 \(x\) 所在集合的 label）。</li>
+          <li>Linked list：Find \(O(1)\)、Union \(O(n)\)；加上「長的串列放前面」→ \(m\) 個操作 \(O(m+n\log n)\)，攤銷 \(O(\log n)\)。</li>
+          <li>Rooted tree：Find／Union 為 \(O(1+H)\)；用 <strong>Union-by-Size</strong> 或 <strong>Union-by-Rank</strong> → 樹高 \(\le\log n\)，worst-case \(O(\log n)\)。</li>
+          <li>再加上 <strong>Path Compression</strong> → 攤銷 \(O(\alpha(n))\)，\(\alpha\) 是 inverse Ackermann function，實務上最多 5。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="problem">1. 維護互斥集合</h2>
+      <p>動機（dynamic graph problem）：不時會新增頂點、在兩個頂點之間新增邊、查詢某個頂點在哪個 connected component。這對應到維護一組互斥集合，支援：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>操作</th><th>作用</th></tr></thead>
+          <tbody>
+            <tr><td>Make-Set(x)</td><td>建立只含 \(x\) 的集合</td></tr>
+            <tr><td>Union(x, y)</td><td>把含 \(x\) 的集合與含 \(y\) 的集合合併成一個</td></tr>
+            <tr><td>Find(x)</td><td>回傳含 \(x\) 的集合的 label</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>通常每個集合挑一個自己的項目當 label。</li>
+        <li>比較 Find(x) 與 Find(y) 回傳的 label，就能判斷 \(x\)、\(y\) 是否在同一個集合。</li>
+        <li>不同方法在 Find 中找 label 的方式不同，也影響 Union 時要怎麼更新。</li>
+      </ul>
+      <p class="src">Algo-Lecture-20_241204_113808.pdf p.3–5</p>
+
+      <!-- ===================================================== -->
+      <h2 id="linked-list">2. 用 Linked List 實作</h2>
+      <ul>
+        <li>集合 ⇔ 一條不同的 list；集合的 label ⇔ list 的 head。</li>
+        <li>為了讓 Find 為 \(O(1)\)：每個項目都有一個指向 head 的 pointer，另有一個 tail pointer 指向最後一個項目。</li>
+        <li>例：\(\{\{a,b,c,d\},\{e,f,g\},\{h\}\}\) 存成三條 list：a→b→c→d、e→f→g、h。</li>
+        <li><strong>Union(x, y)</strong>：把兩條 list 一前一後接起來，並更新<strong>後面那條 list</strong> 每個項目指向 head 的 pointer。例：Union(g, h) → e→f→g→h。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Make-Set／Find</th><th>Union</th><th>\(m\) 個操作總成本</th></tr></thead>
+          <tbody>
+            <tr><td>基本做法</td><td>\(O(1)\)</td><td>\(O(n)\)</td><td>\(O(m+n^2)\)</td></tr>
+            <tr><td>長的 list 放前面</td><td>\(O(1)\)</td><td>—</td><td>\(O(m+n\log n)\)；攤銷 \(O(\log n)\)（因為 \(m\ge n\)）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Heuristic</span>
+          Union 時把<strong>較長的 list 放前面</strong>，只有較短 list 的項目需要更新 pointer → 總更新量最多 \(O(n\log n)\)（講義留作思考：why?）。
+        </div>
+      </div>
+      <p>等價地，也可以把每條 list 看成一棵高度最多 1 的 rooted tree，root 當 label：Find 為 \(O(1)\)，Union(x, y) 把一棵樹的所有節點接成另一棵樹 root 的 children。</p>
+      <p class="src">Algo-Lecture-20_241204_113808.pdf p.6–12</p>
+
+      <!-- ===================================================== -->
+      <h2 id="rooted-tree">3. 用 Rooted Tree 實作</h2>
+      <ul>
+        <li>集合 ⇔ 一棵不同的 rooted tree；集合的 label ⇔ 樹的 root。</li>
+        <li>每個項目有一個指向 parent 的 pointer。</li>
+        <li><strong>Find</strong>：沿著 parent pointer 一路走到 root → \(O(\text{tree height})\)。</li>
+        <li><strong>Union(x, y)</strong>：找到含 \(x\)、\(y\) 的樹，把一個 root 接成另一個 root 的 child。例：Union(f, h)。</li>
+      </ul>
+      <p>設 \(H\) = 所有樹的最大高度：Make-Set \(O(1)\)；Find 或 Union \(O(1+H)\)（即 \(O(n)\)）→ \(m\) 個操作 worst-case 總成本 \(O(mn)\)。</p>
+      <p class="src">Algo-Lecture-21_241201_124707.pdf p.3–6</p>
+
+      <!-- ===================================================== -->
+      <h2 id="reduce-height">4. 降低樹高</h2>
+      <h3 id="union-by-size">Union-by-Size</h3>
+      <p>連接兩棵樹的 root 時，<strong>較小的樹</strong>的 root 成為 child。</p>
+      <ul>
+        <li>要得到高度 \(h\) 的樹，樹的節點數 \(\ge 2^h\) → 最大高度 \(H\le\log n\)。</li>
+        <li>→ Find 或 Union 的 worst-case 為 \(O(\log n)\)。</li>
+      </ul>
+      <p class="src">Algo-Lecture-21_241201_124707.pdf p.7–8</p>
+
+      <h3 id="union-by-rank">Union-by-Rank</h3>
+      <p>時間取決於樹高，所以用和高度相關的 heuristic 更直觀：</p>
+      <ul>
+        <li>每個 root 維護一個 <strong>rank</strong>，代表樹高的 upper bound；單一節點的樹 rank = 0。</li>
+        <li>連接兩個 root 時，<strong>rank 較小</strong>的 root 成為 child：
+          <ul>
+            <li>兩個 rank 相同 → 連接後新 root 的 rank 加 1；</li>
+            <li>rank 不同 → 新 root 的 rank 不變。</li>
+          </ul>
+        </li>
+        <li>要得到 rank \(r\) 的 root，樹的節點數 \(\ge 2^r\) → 最大 rank \(\le\log n\) → 最大高度 \(H\le\log n\) → Find 或 Union worst-case \(O(\log n)\)。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子：Union(c, f)</span>
+          兩棵樹的 root rank 都是 1 → 連接後新 root 的 rank 變成 2。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-21_241201_124707.pdf p.9–12</p>
+
+      <h3 id="path-compression">Path Compression</h3>
+      <ul>
+        <li>看起來 rank 一直等於樹高，但還有另一個用在 Find 的 heuristic：<strong>Path Compression</strong>，它可能讓樹高變小 → 之後的操作更快。</li>
+        <li>但樹高會變得很難更新 → 不更新，<strong>把 rank 當作高度的 upper bound</strong>。</li>
+        <li>做法：節點離 root 越近，之後的操作越快。Find(x) 時本來就會走過 \(x\) 的所有 ancestors 才找到 root → 順便把這些 ancestors 都<strong>直接接到 root</strong>（漸進時間不會增加）。</li>
+      </ul>
+      <p class="src">Algo-Lecture-21_241201_124707.pdf p.13–15</p>
+
+      <!-- ===================================================== -->
+      <h2 id="combine">5. 結合兩種 Heuristic</h2>
+      <p>Find 用 Path Compression，同時 Union 用 Union-by-Size 或 Union-by-Rank：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>操作</th><th>Worst-case</th><th>Amortized</th></tr></thead>
+          <tbody>
+            <tr><td>Make-Set</td><td>\(O(1)\)</td><td>—</td></tr>
+            <tr><td>Find／Union</td><td>\(O(\log n)\)</td><td>\(O(\alpha(n))\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>\(\alpha\) 是 <strong>Inverse Ackermann function</strong>，實務上最多是 5。</p>
+      <p class="src">Algo-Lecture-21_241201_124707.pdf p.16</p>
+
+      <h3 id="log-star">Inverse Ackermann 的一些事實</h3>
+      <ul>
+        <li>數列 \(n\to\log n\to\log(\log n)\to\dots\) 最後會 \(\le 1\)。令 \(\log^*\) = 取 log 幾次才會 \(\le 1\)。</li>
+        <li>例：\(\log^*2=1\)、\(\log^*4=2\)、\(\log^*16=3\)、\(\log^*65536=4\)、\(\log^*2^{65536}=5\)、\(\log^*2^{2^{65536}}=6\) → \(\log^*\) 成長得非常慢。</li>
+        <li>同理，令 \(\log^{**}\) = 取 \(\log^*\) 幾次才會 \(\le 1\) → 成長得更慢。</li>
+        <li>\(\alpha(n)&gt;4\) 需要 \(\log^*(\log^*(\log^* n))&gt;1\)，實務上的 \(n\) 可能做到；但 \(\alpha(n)&gt;5\) 需要 \(\log^{**}(\log^{**}(\log^{**} n))&gt;1\)，實務上不太可能。</li>
+        <li>→ 實務上的 \(n\)，\(\alpha(n)\) 最多是 5。</li>
+      </ul>
+      <p class="src">Algo-Lecture-21_241201_124707.pdf p.17–19</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 用 linked list 實作時，Find 如何做到 \(O(1)\)？Union 要更新什麼？</summary>
+        <div class="answer">
+          <p>每個項目都有指向 head 的 pointer，所以 Find 直接回傳 head。Union 把兩條 list 接起來，並更新後面那條 list 每個項目指向 head 的 pointer。</p>
+          <p class="src">Algo-Lecture-20_241204_113808.pdf p.6, p.8</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Linked list 加上「長的放前面」之後，\(m\) 個操作的時間是多少？</summary>
+        <div class="answer">
+          <p>\(O(m+n\log n)\)，攤銷成本 \(O(\log n)\)（因為 \(m\ge n\)）。</p>
+          <p class="src">Algo-Lecture-20_241204_113808.pdf p.10</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. Union-by-Rank 連接兩個 rank 相同的 root 後，rank 如何變化？</summary>
+        <div class="answer">
+          <p>新 root 的 rank 加 1；若 rank 不同，則 rank 較小的成為 child，新 root 的 rank 不變。</p>
+          <p class="src">Algo-Lecture-21_241201_124707.pdf p.10</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 為什麼使用 Path Compression 後，rank 不再等於樹高？</summary>
+        <div class="answer">
+          <p>Path Compression 可能讓樹高變小，但樹高很難更新，所以不更新，把 rank 當作樹高的 upper bound。</p>
+          <p class="src">Algo-Lecture-21_241201_124707.pdf p.13</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 結合 Path Compression 與 Union-by-Rank 後，Find／Union 的攤銷時間是多少？</summary>
+        <div class="answer">
+          <p>\(O(\alpha(n))\)，\(\alpha\) 為 inverse Ackermann function，實務上最多 5。</p>
+          <p class="src">Algo-Lecture-21_241201_124707.pdf p.16, p.19</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-20_241204_113808.pdf</code>　p.1–12（CS 4311 Introduction to Algorithms, Lecture 20）</li>
+        <li><code>Algo-Lecture-21_241201_124707.pdf</code>　p.1–19（Lecture 21）</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

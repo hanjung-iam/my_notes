@@ -238,13 +238,11 @@ float Rsum(float *A, const int n)
     else return (Rsum(A, n-1) + A[n-1]);
 }
 // Rsum(A, n) → Rsum(A, n-1) → … → Rsum(A, 0)：共 n+1 次呼叫</code></pre>
-      <div class="callout callout-check">
-        <span class="callout-icon">⚠️</span>
-        <div class="callout-body">
-          <span class="callout-title">待確認</span>
-          p.37 中「每次 Rsum 呼叫需要的空間」與 \(S(\text{Rsum})\) 的結果，在 PDF 中沒有可讀取的文字（可能是課堂上補寫或動畫內容），請對照講義或上課筆記補上。
-        </div>
-      </div>
+      <ul>
+        <li>每次 Rsum 呼叫需要 \(4\text{ (bytes)}\times(1+1+1)=12\text{ (bytes)}\)。</li>
+        <li>共 \(n+1\) 次呼叫 → \(S(\text{Rsum})=C+S_{\text{Rsum}}(n)=\text{const}+12\times(n+1)\)。</li>
+      </ul>
+      <p class="src">Session1-Algorithms Handout.pdf p.37（課堂補寫內容，由使用者提供）</p>
 
       <h3 id="time">Time Complexity</h3>
       \[T(P)=C+T_P(I)\]
@@ -264,7 +262,15 @@ float Rsum(float *A, const int n)
         return 0;                           // 1 step
     else return (Rsum(A, n-1) + A[n-1]);    // 1 step
 }</code></pre>
-      <p>結果：\(T_{\text{Sum}}(n)=2n+3\) steps，\(T_{\text{Rsum}}(n)=2n+2\) steps。（\(T_{\text{Rsum}}\) 的遞迴推導過程在 p.40 沒有可讀取的文字。）</p>
+      <p>結果：\(T_{\text{Sum}}(n)=2n+3\) steps，\(T_{\text{Rsum}}(n)=2n+2\) steps。</p>
+      <p>\(T_{\text{Rsum}}\) 的遞迴推導（p.40）：</p>
+      \[\begin{aligned}
+      T_{\text{Rsum}}(0)&amp;=2\\
+      T_{\text{Rsum}}(1)&amp;=2+T_{\text{Rsum}}(0)\\
+      T_{\text{Rsum}}(2)&amp;=2+\bigl(2+T_{\text{Rsum}}(0)\bigr)\\
+      T_{\text{Rsum}}(n)&amp;=2+T_{\text{Rsum}}(n-1)=2n+2
+      \end{aligned}\]
+      <p class="src">Session1-Algorithms Handout.pdf p.40（課堂補寫內容，由使用者提供）</p>
 
       <div class="callout callout-warn">
         <span class="callout-icon">❗</span>

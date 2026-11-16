@@ -142,13 +142,7 @@ TreeNode&lt;T&gt;* AVLTree&lt;T&gt;::leftRotate(TreeNode&lt;T&gt; *node)
         <li>除了 root 以外，所有節點至少有 \(\lceil m/2\rceil-1\) 個 keys</li>
         <li>root 要嘛是 leaf，要嘛有 2 到 \(m\) 個 children</li>
       </ol>
-      <div class="callout callout-check">
-        <span class="callout-icon">⚠️</span>
-        <div class="callout-body">
-          <span class="callout-title">待確認</span>
-          第 3 點的最少 key 數在 PDF 中是公式圖形，只能讀出「m/2 −1」，是否為上取整 \(\lceil m/2\rceil-1\) 請對照講義確認。講義範例 \(m=4\) 時每個節點的 key 數為 1~3。
-        </div>
-      </div>
+      <p>第 3 點：\(m/2\) 先<strong>向上取整</strong>再減 1。講義範例 \(m=4\) 時，每個節點的 key 數為 1~3。</p>
 
       <h3 id="b-tree-insert">Insert</h3>
       <ol>

@@ -39,7 +39,7 @@
           <dt>課程</dt><dd>演算法</dd>
           <dt>單元</dt><dd>Lecture 03</dd>
           <dt>整理日期</dt><dd>2026-11-16</dd>
-          <dt>來源</dt><dd><code>Algo-Lecture-03.pdf</code></dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-03.pdf</code>、<code>手寫筆記_Sorting_DP.pdf</code></dd>
         </dl>
         <div class="tags">
           <span class="tag">遞迴式</span>
@@ -304,6 +304,62 @@ Else, depending on x &lt; z or x &gt; z
       <p class="src">Algo-Lecture-03.pdf p.31</p>
 
       <!-- ===================================================== -->
+      <h2 id="handwritten">7. 手寫筆記補充</h2>
+      <h3 id="hw-sub-merge">代換法：\(T(n)=2T(\lfloor n/2\rfloor)+n\)，\(T(1)=1\)</h3>
+      <ol>
+        <li>做假設：這個式子看起來像 Merge Sort，所以假設 \(T(n)=O(n\lg n)\) 對 \(n=2,3,\dots,k\) 成立。</li>
+        <li>當 \(n=k+1\)（\(\lfloor n/2\rfloor\le k\)，所以可以用假設）：
+          \[\begin{aligned}
+          T(n)&amp;=2T(\lfloor n/2\rfloor)+n\le 2c\lfloor n/2\rfloor\lg\lfloor n/2\rfloor+n\\
+          &amp;\le cn\lg\tfrac{n}{2}+n=cn(\lg n-1)+n=cn\lg n-cn+n\le cn\lg n
+          \end{aligned}\]
+          其中 \(\lg\frac{n}{2}=\lg n-\lg 2=\lg n-1\) → induction case 成立。</li>
+      </ol>
+      <p>用遞迴樹解同一式：每層加 \(n\)（第 2 層 \(\frac n2\times 2=n\)），共 \(\lg n\) 層 → \(T(n)=O(n\lg n)\)。</p>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.4–5</p>
+
+      <h3 id="hw-rt-max">遞迴樹：\(T(n)=T(\lfloor n/2\rfloor)+T(\lceil n/2\rceil)+1\)</h3>
+      <p>手寫筆記用遞迴樹得到 \(T(n)=n+\lceil n/2\rceil\)：</p>
+      <ul>
+        <li>\(n\) 為偶數：\(T(n)=n+\frac n2=\frac32 n\)</li>
+        <li>\(n\) 為奇數：\(T(n)=n+\lceil\frac n2\rceil\le n+n-1=2n-1\)</li>
+        <li>合併：\(\frac32 n=2n-\frac12 n\le 2n-1\)（\(n\ge 2\)）→ \(T(n)=O(2n-1)\)</li>
+      </ul>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.5–6</p>
+
+      <h3 id="hw-sqrt">\(T(n)=2T(\sqrt n)+\lg n\) 的兩種解法</h3>
+      <ul>
+        <li><strong>變數代換</strong>：令 \(m=\lg n\) → \(T(2^m)=2T(2^{m/2})+m\)；令 \(S(m)=T(2^m)=T(n)\) → \(S(m)=2S(m/2)+m\)（同第一個例子）→ \(S(m)=O(m\lg m)\) → \(T(n)=O(\lg n\cdot\lg\lg n)\)。</li>
+        <li><strong>遞迴樹</strong>：第 2 層加 \(\lg\sqrt n\times 2=\lg n\)，每層都加 \(\lg n\)，共 \(\lg\lg n\) 層 → \(T(n)=O(\lg n\cdot\lg\lg n)\)。</li>
+      </ul>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.6–7</p>
+
+      <h3 id="hw-rt-square">遞迴樹：\(T(n)=2T(n/2)+n^2\)，\(T(1)=1\)</h3>
+      <p>第 1 層加 \(n^2\)、第 2 層加 \((\frac n2)^2\times 2=\frac{n^2}{2}\)、第 3 層加 \((\frac n4)^2\times 4=\frac{n^2}{4}\)…，最底層 \(n\cdot T(1)=n\)：</p>
+      \[T(n)=\Big(n^2+\frac{n^2}{2}+\frac{n^2}{4}+\cdots\Big)+n=O(n^2)=\Omega(n^2)=\Theta(n^2)\]
+      <p>手寫筆記也畫了 \(T(n)=n+T(n/3)+T(2n/3)\) 的不平衡遞迴樹，結論同第 3 節例 2：\(\Theta(n\lg n)\)。</p>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.7–8</p>
+
+      <h3 id="hw-master">Master Theorem 的另一種寫法與證明</h3>
+      <p>手寫筆記的寫法：若 \(T(n)=aT(n/b)+O(n^d)\)，常數 \(a&gt;0,\ b&gt;1,\ d\ge 0\)，則</p>
+      \[T(n)=\begin{cases}O(n^d) &amp; d&gt;\log_b a\\ O(n^d\lg n) &amp; d=\log_b a\\ O(n^{\log_b a}) &amp; d&lt;\log_b a\end{cases}\]
+      <p>證明想法：等比級數中，若公比 \(0&lt;r&lt;1\)，最大項是第一項；若 \(r&gt;1\)，最大項是最後一項。遞迴樹第 \(i\) 層有 \(a^i\) 個節點，該層加的量為</p>
+      \[a^i\cdot O\Big(\big(\tfrac{n}{b^i}\big)^d\Big)=O(n^d)\times\Big(\frac{a}{b^d}\Big)^i,\qquad T(n)=\sum_{i=0}^{\log_b n}O(n^d)\times\Big(\frac{a}{b^d}\Big)^i\]
+      <ul>
+        <li>Case 1：\(d&gt;\log_b a\Rightarrow \frac{a}{b^d}&lt;1\) → upper bound \(O(n^d)\)</li>
+        <li>Case 2：\(d=\log_b a\Rightarrow \frac{a}{b^d}=1\) → \(T(n)=(1+\log_b n)\cdot O(n^d)=O(n^d\lg n)\)</li>
+        <li>Case 3：\(d&lt;\log_b a\Rightarrow \frac{a}{b^d}&gt;1\) → upper bound \(=O\Big(O(n^d)\cdot\big(\frac{a}{b^d}\big)^{\log_b n}\Big)=O\Big(O(n^d)\cdot\frac{n^{\log_b a}}{n^d}\Big)\)</li>
+      </ul>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          手寫筆記 p.9 Case 3 的最後一行寫成「\(=O(n\cdot\lg_b a)\)」；同一份筆記 p.8 的定理敘述寫的是 \(O(n^{\log_b a})\)。請對照確認。
+        </div>
+      </div>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.8–9</p>
+
+      <!-- ===================================================== -->
       <h2 id="quiz">自我測驗</h2>
       <details class="quiz">
         <summary>Q1. Merge Sort 的時間遞迴式是什麼？用 Recursion Tree 解出來是多少？</summary>
@@ -344,6 +400,7 @@ Else, depending on x &lt; z or x &gt; z
       <h2 id="sources">來源</h2>
       <ul class="source-list">
         <li><code>Algo-Lecture-03.pdf</code>　p.1–31（CS 4311 Introduction to Algorithms, Lecture 03）</li>
+        <li><code>手寫筆記_Sorting_DP.pdf</code>　p.4–9</li>
       </ul>
     </article>
   </div>

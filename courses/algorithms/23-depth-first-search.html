@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>深度優先搜尋 (DFS) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">深度優先搜尋 (DFS)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>深度優先搜尋 (DFS)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 23、23S</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-23_241211_152224.pdf</code>、<code>Algo-Lecture-23S_241211_161801.pdf</code>、<code>手寫筆記_White_path_thm.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">圖論</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>DFS</strong>：先把一條分支探索到底，再探索另一條分支；用遞迴（或 stack）實作，時間 \(O(|V|+|E|)\)。</li>
+          <li><strong>White-Path Theorem</strong>：若 \(u\) 能經由一條全是 unvisited 頂點的路徑到達 \(v\)，則 DFS on \(u\) 會 discover 路徑上所有頂點。</li>
+          <li>對所有 unvisited 頂點重複做 DFS → 得到 <strong>DFS forest</strong>。</li>
+          <li>Directed graph \(G\) 有 cycle ⇔ DFS 中存在 <strong>back edge</strong> → 可在線性時間偵測 cycle。</li>
+          <li><strong>Parentheses Theorem</strong>：若 \(d(u)&lt;d(v)\)，則兩個區間不是完全包含（\(d(u)&lt;d(v)&lt;f(v)&lt;f(u)\)）就是完全不相交（\(d(u)&lt;f(u)&lt;d(v)&lt;f(v)\)）。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="dfs">1. Depth-First Search</h2>
+      <p>另一個找出從 source \(s\) 可到達的所有頂點的簡單方法。想法：<strong>先把一條分支探索到越深越好，再探索另一條分支</strong>。</p>
+      <pre><span class="pseudo-label">DFS</span><code>DFS(vertex u)
+1. Mark u as discovered
+2. for ( each neighbor v of u )
+       if ( v is not finished and not discovered )
+           DFS( v );
+   Mark u as finished;
+
+To find all vertices reachable from s, run DFS(s)</code></pre>
+      <p>當 \(s\) 被 finished 時結束；discover 新節點時的邊方向形成一棵樹，包含所有從 \(s\) 可到達的節點 → 稱為 \(s\) 的 <strong>DFS tree</strong>。</p>
+      <p class="src">Algo-Lecture-23_241211_152224.pdf p.3–10</p>
+
+      <!-- ===================================================== -->
+      <h2 id="white-path">2. White-Path Theorem</h2>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">White-Path Theorem</span>
+          若 \(u\) 能經由某條路徑 \(P\) 到達 \(v\)，且 \(P\) 上都是 <strong>unvisited</strong> 頂點（not discovered and not finished），則 \(P\) 上所有頂點都會被 DFS on \(u\) discover。
+        </div>
+      </div>
+      <h3 id="white-path-proof">證明（反證法）</h3>
+      <ol>
+        <li>令 \(P=(v_0,v_1,\dots,v_k)\)，\(v_0=u\)、\(v_k=v\)；\(v_0=u\) 一定被 DFS on \(u\) discover。</li>
+        <li>假設 \(P\) 上有頂點沒被 discover → 存在某個 \(v_j\) 被 discover，但 \(v_{j+1}\) 沒有。</li>
+        <li>因為 \(v_j\) 被 discover，它的所有鄰居都會在 \(v_j\) finished 之前被 discover → 矛盾（講義留作思考：why?）。</li>
+      </ol>
+      <p>手寫筆記對矛盾的說明：\(v_k\) 應該要在 \(P\) 上其他所有頂點 finished 之前先 finished。</p>
+      <p class="src">Algo-Lecture-23_241211_152224.pdf p.11–12；手寫筆記_White_path_thm.pdf p.1</p>
+
+      <h3 id="dfs-correctness">DFS 的正確性</h3>
+      <ul>
+        <li>一開始所有頂點都是 unvisited → 若 \(v\) 可從 \(s\) 到達，就有一條從 \(s\) 到 \(v\) 的 unvisited 路徑 → 由 White-Path Theorem，\(v\) 會被 DFS on \(s\) discover。</li>
+        <li>另外，每個被 discover 的頂點都可從 \(s\) 到達（講義留作思考：why?）。</li>
+        <li>→ \(v\) 被 DFS on \(s\) discover ⇔ \(s\) 能到達 \(v\)。</li>
+      </ul>
+      <p class="src">Algo-Lecture-23_241211_152224.pdf p.13</p>
+
+      <!-- ===================================================== -->
+      <h2 id="implementation">3. 實作與 Connected Components</h2>
+      <ul>
+        <li>用 \(O(|V|)\) 大小的陣列記錄每個頂點的 discovered／finished 狀態。</li>
+        <li>可以用遞迴實作，也可以用 stack（講義留作思考：how?）。</li>
+        <li>每個頂點最多被 discover 一次、每條邊最多被看兩次 → \(O(|V|+|E|)\)。</li>
+      </ul>
+      <pre><span class="pseudo-label">Finding Connected Components</span><code>for ( each vertex u )
+    if ( u is not visited )
+        Run DFS with u as source;</code></pre>
+      <p>每跑一次 DFS 就找到一個新的 component，時間與該 component 的邊數成正比 → 總共 \(O(|V|+|E|)\)。</p>
+      <p class="src">Algo-Lecture-23_241211_152224.pdf p.14–15</p>
+
+      <!-- ===================================================== -->
+      <h2 id="dfs-forest">4. DFS Forest (Lecture 23S)</h2>
+      <ul>
+        <li>設 \(G\) 是 directed graph。對任何 unvisited 頂點重複做 DFS，直到所有頂點都被 visit。</li>
+        <li>每做一次新的 DFS，就得到一棵新的 DFS tree → 這些 rooted trees 形成 <strong>DFS forest</strong>。</li>
+        <li>講義例子依序在 s、t、y、r、v 上做 DFS。</li>
+      </ul>
+      <p class="src">Algo-Lecture-23S_241211_161801.pdf p.3–9</p>
+
+      <!-- ===================================================== -->
+      <h2 id="cycle">5. 偵測 Cycle</h2>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Theorem</span>
+          對 directed graph \(G\) 做 DFS：\(G\) 有 cycle ⇔ 存在 <strong>back edge</strong>。<br>
+          → 可以在線性時間內偵測 \(G\) 是否有 cycle。
+        </div>
+      </div>
+      <h3 id="cycle-proof">證明</h3>
+      <p><strong>(⇒)</strong> 假設 \(G\) 有 cycle \(C\)：</p>
+      <ul>
+        <li>令 \(v\) 是 \(C\) 中 discovery time 最早的頂點，\(u\) 是 \(C\) 中 \(v\) 的前一個頂點。</li>
+        <li>由 White-Path Theorem，\(u\) 會被 DFS on \(v\) discover → \(v\) 是 \(u\) 在 DFS tree 中的 ancestor → \((u,v)\) 是 back edge。</li>
+      </ul>
+      <p><strong>(⇐)</strong> 假設有 back edge \((u,v)\)：</p>
+      <ul>
+        <li>\(v\) 是 \(u\) 在 DFS tree 中的 ancestor → \(G\) 中有一條從 \(v\) 到 \(u\) 的有向路徑 \(P\)。</li>
+        <li>\(P\) 加上邊 \((u,v)\) 形成 cycle。</li>
+      </ul>
+      <p class="src">Algo-Lecture-23S_241211_161801.pdf p.10–12；手寫筆記_White_path_thm.pdf p.1–2</p>
+
+      <!-- ===================================================== -->
+      <h2 id="parentheses">6. Discovery／Finishing Time 與 Parentheses Theorem</h2>
+      <p>DFS 時記錄頂點 discovery time 與 finishing time 的相對順序：\(d(v)\) = \(v\) 的 discovery time，\(f(v)\) = \(v\) 的 finishing time。</p>
+      <p>假設 \(d(u)&lt;d(v)\)，分兩種情況：</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>情況</th><th>推理</th><th>結果</th></tr></thead>
+          <tbody>
+            <tr><td>Case 1：\(u\) 被 discover 時，\(u\) 能經由 unvisited 頂點到達 \(v\)</td><td>由 White-Path Theorem，\(v\) 在 DFS on \(u\) 期間被 discover → \(v\) 在 \(u\) finished 前就 finished</td><td>\(f(v)&lt;f(u)\)</td></tr>
+            <tr><td>Case 2：\(u\) 無法經由 unvisited 頂點到達 \(v\)</td><td>DFS on \(u\) 期間 \(v\) 不會被 discover → \(u\) 在 \(v\) 被 discover 前就 finished</td><td>\(f(u)&lt;d(v)\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Parentheses Theorem</span>
+          若 \(d(u)&lt;d(v)\)，則必為下列其中之一：
+          <ol>
+            <li>\(d(u)&lt;d(v)&lt;f(v)&lt;f(u)\)　[完全包含]</li>
+            <li>\(d(u)&lt;f(u)&lt;d(v)&lt;f(v)\)　[完全不相交]</li>
+          </ol>
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-23S_241211_161801.pdf p.13–16；手寫筆記_White_path_thm.pdf p.2</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 寫出 DFS 的 pseudocode。</summary>
+        <div class="answer">
+          <p>DFS(u)：mark u as discovered；對每個鄰居 v，若 v 不是 finished 也不是 discovered，就 DFS(v)；最後 mark u as finished。</p>
+          <p class="src">Algo-Lecture-23_241211_152224.pdf p.4</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 敘述 White-Path Theorem。</summary>
+        <div class="answer">
+          <p>若 \(u\) 能經由一條全是 unvisited 頂點的路徑 \(P\) 到達 \(v\)，則 \(P\) 上所有頂點都會被 DFS on \(u\) discover。</p>
+          <p class="src">Algo-Lecture-23_241211_152224.pdf p.11</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 如何用 DFS 判斷 directed graph 是否有 cycle？</summary>
+        <div class="answer">
+          <p>做 DFS 並檢查是否有 back edge：\(G\) 有 cycle ⇔ 存在 back edge，可在線性時間完成。</p>
+          <p class="src">Algo-Lecture-23S_241211_161801.pdf p.10</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 證明「有 cycle ⇒ 有 back edge」時，\(v\) 怎麼選？</summary>
+        <div class="answer">
+          <p>選 cycle 中 discovery time 最早的頂點 \(v\)，令 \(u\) 為 cycle 中 \(v\) 的前一個頂點；由 White-Path Theorem，\(u\) 被 DFS on \(v\) discover，所以 \((u,v)\) 是 back edge。</p>
+          <p class="src">Algo-Lecture-23S_241211_161801.pdf p.11</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 若 \(d(u)&lt;d(v)\)，Parentheses Theorem 說哪兩種情況之一必成立？</summary>
+        <div class="answer">
+          <p>\(d(u)&lt;d(v)&lt;f(v)&lt;f(u)\)（完全包含）或 \(d(u)&lt;f(u)&lt;d(v)&lt;f(v)\)（完全不相交）。</p>
+          <p class="src">Algo-Lecture-23S_241211_161801.pdf p.16</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-23_241211_152224.pdf</code>　p.1–15（CS 4311 Introduction to Algorithms, Lecture 23）</li>
+        <li><code>Algo-Lecture-23S_241211_161801.pdf</code>　p.1–16（Lecture 23S）</li>
+        <li><code>手寫筆記_White_path_thm.pdf</code>　p.1–2</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

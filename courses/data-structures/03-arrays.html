@@ -148,14 +148,16 @@ private:
       <ul>
         <li>while 迴圈內每個敘述都是 \(O(1)\)。</li>
         <li>設 \(a(x)\) 有 \(m\) 項、\(b(x)\) 有 \(n\) 項；每次迭代會前進到 \(a(x)\) 或 \(b(x)\)（或兩者）的下一項 → while 迴圈 worst case 執行 \(m+n\) 次。</li>
+        <li>加入 \(A(x)\) 剩餘項的時間：\(O(m)\)；加入 \(B(x)\) 剩餘項的時間：\(O(n)\)。</li>
       </ul>
-      <div class="callout callout-check">
-        <span class="callout-icon">⚠️</span>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
         <div class="callout-body">
-          <span class="callout-title">待確認</span>
-          p.15 中「存取 A(x)、B(x) 剩餘項的時間」與「總執行時間」三個空格在 PDF 中沒有文字（可能是上課時補寫），請對照上課筆記補上。
+          <span class="callout-title">總時間</span>
+          多項式加法的總時間為 \(O(m+n)\) → linear time。
         </div>
       </div>
+      <p class="src">Session3-Arrays Handout.pdf p.15（空格答案為課堂補寫內容，由使用者提供）</p>
       <p class="src">Session3-Arrays Handout.pdf p.7–15</p>
 
       <!-- ===================================================== -->

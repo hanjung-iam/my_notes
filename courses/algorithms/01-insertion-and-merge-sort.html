@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>插入排序與合併排序 (Insertion Sort &amp; Merge Sort) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">插入排序與合併排序 (Insertion Sort &amp; Merge Sort)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>插入排序與合併排序 (Insertion Sort &amp; Merge Sort)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 1</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>lecture1 _240905_201432.pdf</code>、<code>手寫筆記_Sorting_DP.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">排序</span>
+          <span class="tag">複雜度分析</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>Insertion Sort</strong>：第 \(k\) 輪把第 \(k\) 個項目往左交換，直到遇到比它小的項目為止；best case 是 linear，worst case（遞減排列）是 quadratic。</li>
+          <li><strong>Selection Sort</strong>：第 \(k\) 輪找出第 \(k-1\) 個位置之後的最小值，放到第 \(k\) 個位置。</li>
+          <li><strong>Merge Sort</strong>（divide-and-conquer）：切成兩半、各自遞迴排序、再合併；\(T(n)=2T(n/2)+c_1n+c_2\) → \(K_1 n\log n+K_2n+K_3\)。</li>
+          <li>分析執行時間時假設電腦是 <strong>RAM</strong>：每個算術、記憶體存取、控制指令都花常數時間；本課程主要看 <strong>worst-case</strong>。</li>
+          <li>\(n\) 很大時，Merge Sort 的 worst-case 時間一定比 Insertion Sort 小 → Merge Sort <strong>asymptotically faster</strong>。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="sorting-problem">1. 排序問題 (The Sorting Problem)</h2>
+      <ul>
+        <li><strong>Input</strong>：\(n\) 個數字的串列；<strong>Output</strong>：把數字依遞增順序排列。</li>
+        <li>排序有很多應用，例如串列排序好之後，搜尋一個數字可以更快。</li>
+        <li>本講介紹 Insertion Sort、Selection Sort、Merge Sort，說明它們為什麼正確，並分析效率。</li>
+      </ul>
+      <p class="src">lecture1 _240905_201432.pdf p.2–3</p>
+
+      <!-- ===================================================== -->
+      <h2 id="insertion-sort">2. Insertion Sort</h2>
+      <ul>
+        <li>共 \(n\) 輪。第 \(k\) 輪：把第 \(k\) 個項目往左交換，直到遇到值比它小的項目才停。</li>
+        <li>手寫筆記的想法：前面 \(n-1\) 個已經排好（sorted），把最後一個（Last）往左插入到正確位置，整串就排好了。</li>
+        <li>手寫筆記：\(O(n^2)\)，worst case 是輸入為反向排列（reverse）。</li>
+      </ul>
+      <p class="src">lecture1 _240905_201432.pdf p.4；手寫筆記_Sorting_DP.pdf p.1</p>
+
+      <!-- ===================================================== -->
+      <h2 id="selection-sort">3. Selection Sort</h2>
+      <ul>
+        <li>共 \(n\) 輪。第 \(k\) 輪：找出第 \(k-1\) 個位置<strong>之後</strong>的最小項目，稱為 \(X\)；把 \(X\) 插到串列的第 \(k\) 個位置。</li>
+      </ul>
+      <h3 id="selection-proof">正確性證明（手寫筆記，數學歸納法）</h3>
+      <p>Claim：Selection Sort 能正確排序 \(n\) 個數字。</p>
+      <ol>
+        <li>\(n=1\) 時 claim 成立。</li>
+        <li>假設對所有 \(n\le k\) 成立。當 \(n=k+1\)：先選出最小的 1 個放在最前面，剩下 \(k\) 個由假設可以排好 → 整串 sorted，claim 對 \(n=k+1\) 也成立。</li>
+      </ol>
+      <p>手寫筆記：時間為 \(n^2\)。</p>
+      <p class="src">lecture1 _240905_201432.pdf p.5；手寫筆記_Sorting_DP.pdf p.1</p>
+
+      <!-- ===================================================== -->
+      <h2 id="bubble-sort">4. Bubble Sort（手寫筆記補充）</h2>
+      <ul>
+        <li>每一輪依序比較左右 2 個數字；第 \(k\) 輪結束後，倒數 \(k\) 個數字是 sorted。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子</span>
+          輸入 3, 5, 2, 7, 4, 6, 1 → 第 1 輪（R1）結束後：3, 2, 5, 4, 6, 1, <strong>7</strong>（最大的 7 移到最後）。
+        </div>
+      </div>
+      <p class="src">手寫筆記_Sorting_DP.pdf p.1</p>
+
+      <!-- ===================================================== -->
+      <h2 id="merge-sort">5. Divide-and-Conquer 與 Merge Sort</h2>
+      <h3 id="divide-and-conquer">Divide-and-Conquer</h3>
+      <ul>
+        <li>把大問題切成小問題 → 分別解決小問題 → 合併結果，解決原本的問題。</li>
+        <li>用在排序：小問題 = 排序比較少的數字 → 把串列切成兩個較短的串列；最後把兩個排好的串列「merge」成一個。</li>
+      </ul>
+      <pre><span class="pseudo-label">Merge Sort（key steps）</span><code>Step 1. Divide list to two halves, A and B
+Step 2. Sort A using Merge Sort
+Step 3. Sort B using Merge Sort
+Step 4. Merge sorted lists of A and B</code></pre>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子（手寫筆記）</span>
+          5, 4, 1, 3, 6, 2 → 切成 (5, 4, 1) 與 (3, 6, 2) → 再切 → 合併出 4, 5 → 1, 4, 5；另一半 3, 6 → 2, 3, 6 → 最後合併成 1, 2, 3, 4, 5, 6。
+        </div>
+      </div>
+      <h3 id="merge-proof">正確性證明（手寫筆記，數學歸納法）</h3>
+      <ol>
+        <li>假設 Merge Sort 對 \(n=1,2,\dots,k\) 都能正確排序。</li>
+        <li>\(n=k+1\) 時，把串列切成兩部分，每部分有 \(\frac{k+1}{2}\) 個數字；由假設，兩個較小的串列都能被 Merge Sort 正確排序。</li>
+        <li>合併兩個排好的串列時，每次只要找出兩個串列中較小的數字 → \(n\) 個數字能正確排序。</li>
+      </ol>
+      <p>手寫筆記：Merge Sort 為 \(O(n\cdot\lg n)\)。</p>
+      <p class="src">lecture1 _240905_201432.pdf p.6–8；手寫筆記_Sorting_DP.pdf p.2</p>
+
+      <!-- ===================================================== -->
+      <h2 id="running-time">6. 分析執行時間 (Running Time)</h2>
+      <h3 id="ram-model">RAM 模型</h3>
+      <ul>
+        <li>電腦種類很多，無法直接比較實際執行時間。</li>
+        <li>標準假設：電腦是 <strong>RAM (Random Access Machine)</strong>，每個算術運算、記憶體存取、控制指令（conditional jump、subroutine call、return）都花常數時間。</li>
+        <li>用 RAM 操作描述演算法 → 可以數出各種操作的次數 → 量測執行時間。</li>
+        <li>執行時間通常寫成<strong>輸入大小</strong>的函數（排序問題中為 \(n\)）。</li>
+      </ul>
+      <p class="src">lecture1 _240905_201432.pdf p.9–10</p>
+
+      <h3 id="insertion-time">Insertion Sort 的執行時間</h3>
+      <pre><span class="pseudo-label">Pseudocode</span><code>INSERTION-SORT(A)                                  cost   times
+1  for j ← 2 to length[A]                          c1     n
+2      do key ← A[j]                               c2     n − 1
+3         ▷ Insert A[j] into the sorted
+             sequence A[1 .. j − 1].               0      n − 1
+4         i ← j − 1                                c4     n − 1
+5         while i &gt; 0 and A[i] &gt; key               c5     Σ_{j=2..n} t_j
+6             do A[i + 1] ← A[i]                   c6     Σ_{j=2..n} (t_j − 1)
+7                i ← i − 1                         c7     Σ_{j=2..n} (t_j − 1)
+8         A[i + 1] ← key                           c8     n − 1</code></pre>
+      <p>\(t_j\) = 第 \(j\) 輪 key 被比較的次數。合併各項：</p>
+      \[T(n)=c_1n+(c_2+c_4+c_8)(n-1)+c_5\sum_{j=2}^{n}t_j+(c_6+c_7)\sum_{j=2}^{n}(t_j-1)\]
+      <p>\(t_j\) 的值取決於<strong>輸入本身</strong>（不只是輸入大小）。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>情況</th><th>輸入</th><th>\(t_j\)</th><th>\(T(n)\)</th></tr></thead>
+          <tbody>
+            <tr><td>Best case</td><td>已經排好</td><td>\(t_j=1\)</td><td>\(c_1n+(c_2+c_4+c_5+c_8)(n-1)=Kn+c\)，linear</td></tr>
+            <tr><td>Worst case</td><td>遞減排列</td><td>\(t_j=j-1\)</td><td>\(K_1n^2+K_2n+K_3\)，quadratic</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">lecture1 _240905_201432.pdf p.11–13</p>
+
+      <h3 id="worst-case">為什麼看 Worst-Case</h3>
+      <ol>
+        <li>給出執行時間的 upper bound。</li>
+        <li>Worst case 相當常發生。</li>
+      </ol>
+      <p>備註：也有人研究 average-case（假設輸入是隨機產生的）。</p>
+      <p class="src">lecture1 _240905_201432.pdf p.14</p>
+
+      <h3 id="merge-time">Merge Sort 的執行時間</h3>
+      <pre><span class="pseudo-label">Pseudocode（partial）</span><code>MERGE-SORT(A, p, r)
+1  if p &lt; r
+2     then q ← ⌊(p + r)/2⌋
+3          MERGE-SORT(A, p, q)
+4          MERGE-SORT(A, q + 1, r)
+5          MERGE(A, p, q, r)</code></pre>
+      <p>講義中 <code>MERGE(A,p,q,r)</code> 留作練習（提示：用一個暫存陣列來合併）。假設兩個總大小為 \(n\) 的串列 Merge 需要 \(c_1n\) 時間：</p>
+      \[T(n)=\begin{cases}2T(n/2)+c_1n+c_2 &amp; n&gt;1\\ c_3 &amp; n=1\end{cases}
+      \quad\Rightarrow\quad T(n)=K_1n\log n+K_2n+K_3\]
+      <p class="src">lecture1 _240905_201432.pdf p.15–17</p>
+
+      <!-- ===================================================== -->
+      <h2 id="which-faster">7. 哪個演算法比較快？</h2>
+      <ul>
+        <li>執行時間中的常數未知，所以還不能直接比較。</li>
+        <li>但只要 \(n\) <strong>非常大</strong>，Merge Sort 的 worst-case 時間一定比 Insertion Sort 小。</li>
+        <li>→ Merge Sort is <strong>asymptotically faster</strong> than Insertion Sort。</li>
+      </ul>
+      <p class="src">lecture1 _240905_201432.pdf p.18</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. Insertion Sort 的 best case 與 worst case 分別是什麼輸入？時間各是什麼函數？</summary>
+        <div class="answer">
+          <p>Best case：輸入已排好，所有 \(t_j=1\)，\(T(n)=Kn+c\)（linear）。Worst case：輸入遞減排列，\(t_j=j-1\)，\(T(n)=K_1n^2+K_2n+K_3\)（quadratic）。</p>
+          <p class="src">lecture1 _240905_201432.pdf p.13</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Selection Sort 第 \(k\) 輪做什麼？</summary>
+        <div class="answer">
+          <p>找出第 \(k-1\) 個位置之後的最小項目 \(X\)，把 \(X\) 插到第 \(k\) 個位置。</p>
+          <p class="src">lecture1 _240905_201432.pdf p.5</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 寫出 Merge Sort 的四個步驟與執行時間的遞迴式。</summary>
+        <div class="answer">
+          <p>切成兩半 A、B → 用 Merge Sort 排 A → 用 Merge Sort 排 B → 合併。\(T(n)=2T(n/2)+c_1n+c_2\)（\(n&gt;1\)），\(T(1)=c_3\)，解得 \(K_1n\log n+K_2n+K_3\)。</p>
+          <p class="src">lecture1 _240905_201432.pdf p.8, p.17</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 為什麼本課程主要分析 worst-case running time？</summary>
+        <div class="answer">
+          <p>它給出執行時間的 upper bound，而且 worst case 相當常發生。</p>
+          <p class="src">lecture1 _240905_201432.pdf p.14</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 用數學歸納法說明 Merge Sort 為什麼正確。</summary>
+        <div class="answer">
+          <p>假設對 \(n\le k\) 都正確；\(n=k+1\) 時切成兩半，各自由假設可排好；合併時每次取兩串列中較小的數字，所以整串排好。</p>
+          <p class="src">手寫筆記_Sorting_DP.pdf p.2</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>lecture1 _240905_201432.pdf</code>　p.1–18（CS4311 Design and Analysis of Algorithms, Lecture 1: Getting Started）</li>
+        <li><code>手寫筆記_Sorting_DP.pdf</code>　p.1–2</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

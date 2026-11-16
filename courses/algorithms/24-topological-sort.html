@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>拓撲排序 (Topological Sort) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">拓撲排序 (Topological Sort)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>拓撲排序 (Topological Sort)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 24</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-24_241212_135033.pdf</code>、<code>手寫筆記_White_path_thm.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">圖論</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>Topological Sort</strong>：排列頂點，使每條邊 \((u,v)\) 中 \(u\) 都排在 \(v\) 前面。</li>
+          <li>有 directed cycle 就不能做 topological sort；<strong>DAG 一定可以</strong>。</li>
+          <li><strong>Key Lemma</strong>：DAG 一定有 in-degree 為 0 的頂點。</li>
+          <li>Method I：反覆輸出 in-degree 0 的頂點；用 in-degree 陣列 \(A\) 與 list \(L\) 實作 → \(O(|V|+|E|)\)。</li>
+          <li>Method II：做 DFS，依 <strong>finishing time 遞減</strong>輸出；用 stack 免排序 → \(O(|V|+|E|)\)。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="problem">1. Topological Sort 問題</h2>
+      <ul>
+        <li>Directed graph 可以表示一組事件之間的<strong>先後順序 (precedence)</strong>，例如穿衣服：under-shorts → pants → belt…</li>
+        <li>設 \(G\) 是這樣的 precedence graph。能不能把頂點排成一列，使得只要 \((u,v)\) 是 \(G\) 的邊，\(u\) 就出現在 \(v\) 之前？這就是 <strong>Topological Sort</strong> 問題。</li>
+        <li>若 \(G\) 有 directed cycle，就無法 topological sort（可用反證法證明）。</li>
+        <li>但若 \(G\) 是 acyclic，topological sort 一定做得到。</li>
+      </ul>
+      <p class="src">Algo-Lecture-24_241212_135033.pdf p.3–6</p>
+
+      <!-- ===================================================== -->
+      <h2 id="key-lemma">2. Key Lemma</h2>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Key Lemma</span>
+          設 \(G\) 是 directed acyclic graph（DAG，手寫筆記：沒有 cycle 的圖），則 \(G\) 中一定有某個頂點的 in-degree 為 0。
+        </div>
+      </div>
+      <h3 id="key-lemma-proof">證明</h3>
+      <ol>
+        <li>從任意頂點 \(v_0\) 開始。若 \(v_0\) 的 in-degree 為 0 → 完成。否則存在某個 \(v_1\) 指向 \(v_0\)。</li>
+        <li>若 \(v_1\) 的 in-degree 為 0 → 完成。否則存在某個 \(v_2\) 指向 \(v_1\)…</li>
+        <li>持續下去，要嘛找到 in-degree 為 0 的頂點，要嘛得到 \(v_k\to v_{k-1}\to\dots\to v_1\to v_0\)。</li>
+        <li>這些頂點一定都不同；否則（例如 \(v_1=v_k\)）就形成 directed cycle，和 \(G\) 是 DAG 矛盾。</li>
+        <li>但 \(G\) 的頂點數有限 → 過程一定會停 → 找到 in-degree 為 0 的頂點。</li>
+      </ol>
+      <p class="src">Algo-Lecture-24_241212_135033.pdf p.7–11；手寫筆記_White_path_thm.pdf p.3</p>
+
+      <!-- ===================================================== -->
+      <h2 id="method-1">3. Method I：反覆輸出 In-degree 0 的頂點</h2>
+      <h3 id="why-possible">為什麼 DAG 一定可以</h3>
+      <pre><span class="pseudo-label">Pseudocode</span><code>1. Find a vertex u with in-degree 0
+2. Output u
+3. Remove u and its outgoing edges from G
+4. Repeat Steps 1 ~ 3 to output the next vertex</code></pre>
+      <p>移除後的圖仍然是 DAG；輸出的頂點形成 topological sort 順序（講義留作思考：why?）。</p>
+      <p>直接照做：每一輪花 \(O(|V|+|E|)\) 計算每個頂點的 in-degree，共 \(O(|V|)\) 輪 → 總時間 \(O(|V|(|V|+|E|))\)。可以做得更好。</p>
+      <p class="src">Algo-Lecture-24_241212_135033.pdf p.12–13；手寫筆記_White_path_thm.pdf p.3</p>
+
+      <h3 id="method-1-better">改良版</h3>
+      <pre><span class="pseudo-label">Pseudocode</span><code>1. Keep an O(|V|)-size array A for in-degree of each vertex
+2. Initialize a list L of vertices whose in-degree is 0
+3. while ( L is not empty )
+       Pick a vertex u from L and output u
+       for ( each out-neighbor v of u )
+           Decrement A[v] by 1;
+           if ( A[v] becomes 0 ) Add u to L;</code></pre>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          講義 p.14 最後一行寫「if ( A[v] becomes 0 ) Add <strong>u</strong> to L」，但前面遞減的是 A[v]；手寫筆記 p.4 的寫法是「for (each out-neighbor u of v) A[u]--；if (A[u]==0) Add u to L」，變數名稱一致。上方 pseudocode 依講義原文照錄，請對照確認。
+        </div>
+      </div>
+      <ul>
+        <li>Line 1、Line 2 可以藉由處理輸入的 adjacency lists 完成。</li>
+        <li>Line 3 的迴圈反覆移除並輸出 in-degree 為 0 的頂點 \(u\)；移除 \(u\) 時也移除所有邊 \((u,v)\)，所以要更新陣列 \(A\)。</li>
+        <li>若 \(v\) 沒有 incoming edge，\(v\) 隨時都可以輸出。</li>
+      </ul>
+      <p><strong>時間</strong>：Line 1、2 花 \(O(|V|+|E|)\)；Line 3 中每個頂點最多加入 \(L\) 一次、每條邊最多處理一次 → \(O(|V|+|E|)\)。總共 <strong>\(O(|V|+|E|)\)</strong>。</p>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          手寫筆記 p.4 寫「Line 1 and Line 2 takes \(O(|V|)\)」，講義 p.16 寫 Line 1、Line 2 花 \(O(|V|+|E|)\)。兩者的總時間都是 \(O(|V|+|E|)\)。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-24_241212_135033.pdf p.14–16；手寫筆記_White_path_thm.pdf p.4</p>
+
+      <!-- ===================================================== -->
+      <h2 id="method-2">4. Method II：用 DFS</h2>
+      <pre><span class="pseudo-label">Pseudocode（手寫筆記整理）</span><code>1. Traverse G by DFS and record the finishing time for each vertex
+2. Output vertices in descending order of finishing time</code></pre>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子</span>
+          穿衣服的圖做一次 DFS 後，依 finishing time 遞減由左到右排列這些事件 → 所有邊的方向都由左指向右。
+        </div>
+      </div>
+      <h3 id="method-2-why">為什麼正確</h3>
+      <p>首先 \(G\) 必須是 DAG。由 White-Path Theorem，對每條邊 \((u,v)\)：</p>
+      <ul>
+        <li>若 \(d(u)&lt;d(v)\)，則 \(d(u)&lt;d(v)&lt;f(v)&lt;f(u)\)；</li>
+        <li>若 \(d(v)&lt;d(u)\)，則 \(d(v)&lt;f(v)&lt;d(u)&lt;f(u)\)。</li>
+      </ul>
+      <p>→ 不論哪種情況，\(f(v)&lt;f(u)\)，所以依 finishing time 遞減輸出時 \(u\) 在 \(v\) 前面。</p>
+      <h3 id="method-2-time">時間</h3>
+      <ul>
+        <li>DFS 花 \(O(|V|+|E|)\)。</li>
+        <li>排序 finishing times：直接排序 \(O(|V|\log|V|)\)；較聰明的方法是用一個額外的 stack \(S\)，頂點一 finished 就 push 進 \(S\) → 不需要排序。</li>
+        <li>總時間 <strong>\(O(|V|+|E|)\)</strong>（手寫筆記：Run DFS \(O(|V|+|E|)\) + Output \(O(|V|)\)）。</li>
+      </ul>
+      <p class="src">Algo-Lecture-24_241212_135033.pdf p.17–19；手寫筆記_White_path_thm.pdf p.4</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 什麼樣的圖無法做 topological sort？</summary>
+        <div class="answer">
+          <p>有 directed cycle 的圖。若 \(G\) 是 acyclic（DAG），topological sort 一定做得到。</p>
+          <p class="src">Algo-Lecture-24_241212_135033.pdf p.6</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 證明 DAG 一定有 in-degree 為 0 的頂點。</summary>
+        <div class="answer">
+          <p>從任意頂點往回找指向它的頂點；這些頂點一定不同（否則形成 cycle），而頂點數有限，所以過程一定會停在 in-degree 為 0 的頂點。</p>
+          <p class="src">Algo-Lecture-24_241212_135033.pdf p.7–11</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 直接反覆「找 in-degree 0 頂點 → 輸出 → 移除」的時間是多少？怎麼改良？</summary>
+        <div class="answer">
+          <p>每輪 \(O(|V|+|E|)\)、共 \(O(|V|)\) 輪 → \(O(|V|(|V|+|E|))\)。改良：用陣列 \(A\) 記 in-degree、用 list \(L\) 存 in-degree 為 0 的頂點，總時間 \(O(|V|+|E|)\)。</p>
+          <p class="src">Algo-Lecture-24_241212_135033.pdf p.13–16</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 為什麼依 DFS finishing time 遞減輸出就是 topological order？</summary>
+        <div class="answer">
+          <p>在 DAG 上，對每條邊 \((u,v)\)，不論 \(d(u)&lt;d(v)\) 或 \(d(v)&lt;d(u)\)，都有 \(f(v)&lt;f(u)\)。</p>
+          <p class="src">Algo-Lecture-24_241212_135033.pdf p.18</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. Method II 如何避免排序 finishing times？</summary>
+        <div class="answer">
+          <p>用一個額外的 stack，頂點一 finished 就 push 進去，總時間 \(O(|V|+|E|)\)。</p>
+          <p class="src">Algo-Lecture-24_241212_135033.pdf p.19</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-24_241212_135033.pdf</code>　p.1–19（CS 4311 Introduction to Algorithms, Lecture 24）</li>
+        <li><code>手寫筆記_White_path_thm.pdf</code>　p.3–4</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

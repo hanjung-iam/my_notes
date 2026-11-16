@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>漸進符號 (Asymptotic Notation) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">漸進符號 (Asymptotic Notation)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>漸進符號 (Asymptotic Notation)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 2</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>lecture2_241017_175628.pdf</code>、<code>手寫筆記_Sorting_DP.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">複雜度分析</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>比較執行時間時只看<strong>主導項 (dominating term)</strong>，連主導項的常數也可以忽略 → \(n^2\) vs \(n\log n\)。</li>
+          <li>\(O\) 像 \(\le\)、\(\Omega\) 像 \(\ge\)、\(\Theta\) 像 \(=\)、\(o\) 像 \(&lt;\)、\(\omega\) 像 \(&gt;\)。</li>
+          <li>\(f(n)=O(g(n))\iff g(n)=\Omega(f(n))\)；\(f(n)=\Theta(g(n))\iff f(n)=O(g(n))\) 且 \(f(n)=\Omega(g(n))\)。</li>
+          <li>Little-o 等價定義：\(\lim_{n\to\infty} f(n)/g(n)=0\)；Little-omega：\(\lim_{n\to\infty} g(n)/f(n)=0\)。</li>
+          <li>Insertion Sort = \(\Theta(n^2)\)，Merge Sort = \(\Theta(n\log n)\)（沒特別說明時，執行時間指 worst-case）。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="dominating-term">1. 主導項與漸進效率</h2>
+      <ul>
+        <li>Insertion Sort 的執行時間 \(An^2+Bn+C\)；Merge Sort 的執行時間 \(Dn\log n+En+F\)（\(A\)–\(F\) 為常數）。</li>
+        <li>\(n\) 很大時，只要看<strong>主導項</strong>（\(n\) 增加時成長最快的項）：\(An^2\) vs \(Dn\log n\)。</li>
+        <li>主導項的常數影響不大 → 直接比較 \(n^2\) vs \(n\log n\) → \(n\) 夠大時 Merge Sort 比 Insertion Sort 好。</li>
+        <li>這種比較稱為研究兩個演算法的 <strong>asymptotic efficiency</strong>；若 P 比 Q asymptotically faster，P 通常是較好的選擇。</li>
+      </ul>
+      <p>手寫筆記：漸進符號用來描述函數的<strong>成長</strong>。例：\(F(n)=2n^3+4n-5\) 成長得像 \(n^3\) → \(F(n)=O(n^3)\)（order）。</p>
+      <p class="src">lecture2_241017_175628.pdf p.3–5；手寫筆記_Sorting_DP.pdf p.3</p>
+
+      <!-- ===================================================== -->
+      <h2 id="big-o">2. Big-O</h2>
+      <p>給定 \(g(n)\)，\(O(g(n))\) 是下列函數的集合：</p>
+      \[O(g(n))=\{\,f(n)\mid \exists\ c,n_0&gt;0 \text{ such that } 0\le f(n)\le c\,g(n)\ \ \forall n\ge n_0\,\}\]
+      <p>大意：\(O(g(n))\) 包含所有被 \(g(n)\) <strong>上界</strong>住的函數。習慣上寫 \(f(n)=O(g(n))\) 來表示 \(f(n)\in O(g(n))\)。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>例子</th><th>證明</th></tr></thead>
+          <tbody>
+            <tr><td>\(4n\in O(5n)\)</td><td>\(c=1,\ n\ge 1\)</td></tr>
+            <tr><td>\(4n\in O(n)\)</td><td>\(c=4,\ n\ge 1\)</td></tr>
+            <tr><td>\(4n+3\in O(n)\)</td><td>\(c=5,\ n\ge 3\)</td></tr>
+            <tr><td>\(n\in O(0.001n^2)\)</td><td>\(c=1,\ n\ge 100\)</td></tr>
+            <tr><td>\(\log_e n\in O(\log n)\)</td><td>\(c=1,\ n\ge 1\)</td></tr>
+            <tr><td>\(\log n\in O(\log_e n)\)</td><td>\(c=\log e,\ n\ge 1\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">lecture2_241017_175628.pdf p.6–7</p>
+
+      <!-- ===================================================== -->
+      <h2 id="big-omega">3. Big-Omega</h2>
+      \[\Omega(g(n))=\{\,f(n)\mid \exists\ c,n_0&gt;0 \text{ such that } 0\le c\,g(n)\le f(n)\ \ \forall n\ge n_0\,\}\]
+      <p>大意：\(\Omega(g(n))\) 包含所有被 \(g(n)\) <strong>下界</strong>住的函數。</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Big-O 與 Big-Ω 的關係</span>
+          \(f(n)=O(g(n))\iff g(n)=\Omega(f(n))\)
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>例子</th><th>證明</th></tr></thead>
+          <tbody>
+            <tr><td>\(5n=\Omega(4n)\)</td><td>\(c=1,\ n\ge 1\)</td></tr>
+            <tr><td>\(n=\Omega(4n)\)</td><td>\(c=1/4,\ n\ge 1\)</td></tr>
+            <tr><td>\(4n+3=\Omega(n)\)</td><td>\(c=1,\ n\ge 1\)</td></tr>
+            <tr><td>\(0.001n^2=\Omega(n)\)</td><td>\(c=1,\ n\ge 100\)</td></tr>
+            <tr><td>\(\log_e n=\Omega(\log n)\)</td><td>\(c=1/\log e,\ n\ge 1\)</td></tr>
+            <tr><td>\(\log n=\Omega(\log_e n)\)</td><td>\(c=1,\ n\ge 1\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>手寫筆記的例子：\(F(n)=2n^3+4n-5\) → \(F(n)=O(n^3)\)，也可以寫 \(F(n)=\Omega(n^2)\)。</p>
+      <p class="src">lecture2_241017_175628.pdf p.8–10；手寫筆記_Sorting_DP.pdf p.3</p>
+
+      <!-- ===================================================== -->
+      <h2 id="theta">4. Theta</h2>
+      \[\Theta(g(n))=\{\,f(n)\mid \exists\ c_1,c_2,n_0&gt;0 \text{ such that } 0\le c_1g(n)\le f(n)\le c_2g(n)\ \ \forall n\ge n_0\,\}\]
+      <p>意思：同時可以被 \(g(n)\) 上界和下界住的函數，也就是 \(\Theta(g(n))=O(g(n))\cap\Omega(g(n))\)。</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">三者的關係</span>
+          \(f(n)=\Theta(g(n))\iff f(n)=O(g(n))\) 且 \(f(n)=\Omega(g(n))\)
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>例子</th><th>證明</th></tr></thead>
+          <tbody>
+            <tr><td>\(4n=\Theta(n)\)</td><td>\(c_1=1,\ c_2=4,\ n\ge 1\)</td></tr>
+            <tr><td>\(4n+3=\Theta(n)\)</td><td>\(c_1=1,\ c_2=5,\ n\ge 3\)</td></tr>
+            <tr><td>\(\log_e n=\Theta(\log n)\)</td><td>\(c_1=1/\log e,\ c_2=1,\ n\ge 1\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>Running time of Insertion Sort = \(\Theta(n^2)\)；沒特別說明時，running time 指 <strong>worst-case</strong>。</li>
+        <li>Running time of Merge Sort = \(\Theta(n\log n)\)。</li>
+      </ul>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          手寫筆記 p.3 對 \(\lg_e n=\Theta(\lg n)\) 寫的不等式是「\(\lg n\le \lg_e n\le \frac{\lg n}{\lg e}\)」（並在旁註「相等」），講義 p.13 用的常數是 \(c_1=1/\log e,\ c_2=1\)。兩者寫法不同，請對照確認。
+        </div>
+      </div>
+      <p class="src">lecture2_241017_175628.pdf p.11–13；手寫筆記_Sorting_DP.pdf p.3</p>
+
+      <!-- ===================================================== -->
+      <h2 id="little-o">5. Little-o 與 Little-omega</h2>
+      <h3 id="little-o-def">Little-o</h3>
+      \[o(g(n))=\{\,f(n)\mid \forall c&gt;0,\ \exists\ n_0&gt;0 \text{ such that } 0\le f(n)&lt;c\,g(n)\ \ \forall n\ge n_0\,\}\]
+      <p>注意和 Big-O 的異同：Big-O 是「<strong>存在</strong>某個 \(c\)」，little-o 是「<strong>對任意</strong> \(c\)」。等價定義：</p>
+      \[o(g(n))=\{\,f(n)\mid \lim_{n\to\infty} f(n)/g(n)=0\,\}\]
+      <p>例：\(4n=o(n^2)\)、\(n\log n=o(n^{1.000001})\)、\(n\log n=o(n\log^2 n)\)。</p>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子（手寫筆記，用極限證明）</span>
+          \(\ln n=o(n)\)：\(\displaystyle\lim_{n\to\infty}\frac{\ln n}{n}=\lim_{n\to\infty}\frac{1/n}{1}=0\)<br>
+          \(\ln n=o(n^{\varepsilon})\)：\(\displaystyle\lim_{n\to\infty}\frac{\ln n}{n^{\varepsilon}}=\lim_{n\to\infty}\frac{1/n}{\varepsilon n^{\varepsilon-1}}=\lim_{n\to\infty}\frac{1}{\varepsilon n^{\varepsilon}}=0\)
+        </div>
+      </div>
+      <h3 id="little-omega-def">Little-omega</h3>
+      \[\omega(g(n))=\{\,f(n)\mid \forall c&gt;0,\ \exists\ n_0&gt;0 \text{ such that } 0\le c\,g(n)&lt;f(n)\ \ \forall n\ge n_0\,\}\]
+      <p>等價定義：\(\omega(g(n))=\{\,f(n)\mid \lim_{n\to\infty} g(n)/f(n)=0\,\}\)。</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Little-o 與 Little-ω 的關係</span>
+          \(f(n)=o(g(n))\iff g(n)=\omega(f(n))\)
+        </div>
+      </div>
+      <p class="src">lecture2_241017_175628.pdf p.14–17；手寫筆記_Sorting_DP.pdf p.3</p>
+
+      <!-- ===================================================== -->
+      <h2 id="summary">6. 記憶方式</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>符號</th><th>像</th><th>意思</th></tr></thead>
+          <tbody>
+            <tr><td>\(O\)</td><td>\(\le\)</td><td>\(f(n)=O(g(n))\) means \(f(n)\le cg(n)\)</td></tr>
+            <tr><td>\(\Omega\)</td><td>\(\ge\)</td><td>\(f(n)=\Omega(g(n))\) means \(f(n)\ge cg(n)\)</td></tr>
+            <tr><td>\(\Theta\)</td><td>\(=\)</td><td>\(f(n)=\Theta(g(n))\iff g(n)=\Theta(f(n))\)</td></tr>
+            <tr><td>\(o\)</td><td>\(&lt;\)</td><td>\(f(n)=o(g(n))\) means \(f(n)&lt;cg(n)\)</td></tr>
+            <tr><td>\(\omega\)</td><td>\(&gt;\)</td><td>\(f(n)=\omega(g(n))\) means \(f(n)&gt;cg(n)\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">易錯：不是任兩個函數都能比較</span>
+          例如 \(\sin x\) 和 \(\cos x\) 無法用漸進符號比較。
+        </div>
+      </div>
+      <p class="src">lecture2_241017_175628.pdf p.18；手寫筆記_Sorting_DP.pdf p.4</p>
+
+      <!-- ===================================================== -->
+      <h2 id="whats-wrong">7. 找錯：\(1+2+\dots+n=O(n)\)？</h2>
+      <p>講義的思考題：有人用數學歸納法「證明」\(1+2+\dots+n=O(n)\)：</p>
+      <ol>
+        <li>First, \(1=O(n)\)</li>
+        <li>Assume \(1+2+\dots+k=O(n)\)</li>
+        <li>Then, \(1+2+\dots+k+(k+1)=O(n)+(k+1)=O(n)+O(n)=O(2n)=O(n)\)</li>
+      </ol>
+      <p>講義問：bug 在哪裡？（講義沒有給出答案。）</p>
+      <p class="src">lecture2_241017_175628.pdf p.19</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 寫出 Big-O 的定義。</summary>
+        <div class="answer">
+          <p>\(O(g(n))=\{f(n)\mid\) 存在正常數 \(c,n_0\)，使得對所有 \(n\ge n_0\)，\(0\le f(n)\le cg(n)\}\)。</p>
+          <p class="src">lecture2_241017_175628.pdf p.6</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 證明 \(4n+3=\Theta(n)\) 時要用哪些常數？</summary>
+        <div class="answer">
+          <p>\(c_1=1,\ c_2=5,\ n\ge 3\)。</p>
+          <p class="src">lecture2_241017_175628.pdf p.13</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. Little-o 和 Big-O 的定義差在哪裡？</summary>
+        <div class="answer">
+          <p>Big-O 只要<strong>存在</strong>某個正常數 \(c\)；little-o 要求<strong>對任意</strong>正常數 \(c\) 都存在 \(n_0\) 使 \(f(n)&lt;cg(n)\)。等價於 \(\lim f(n)/g(n)=0\)。</p>
+          <p class="src">lecture2_241017_175628.pdf p.14–15</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. \(f(n)=\Theta(g(n))\) 和 Big-O、Big-Ω 有什麼關係？</summary>
+        <div class="answer">
+          <p>\(f(n)=\Theta(g(n))\iff f(n)=O(g(n))\) 且 \(f(n)=\Omega(g(n))\)。</p>
+          <p class="src">lecture2_241017_175628.pdf p.12</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 用極限說明 \(\ln n=o(n)\)。</summary>
+        <div class="answer">
+          <p>\(\lim_{n\to\infty}\frac{\ln n}{n}=\lim_{n\to\infty}\frac{1/n}{1}=0\)，所以 \(\ln n=o(n)\)。</p>
+          <p class="src">手寫筆記_Sorting_DP.pdf p.3</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>lecture2_241017_175628.pdf</code>　p.1–19（CS4311 Design and Analysis of Algorithms, Lecture 2: Growth of Function）</li>
+        <li><code>手寫筆記_Sorting_DP.pdf</code>　p.3–4</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

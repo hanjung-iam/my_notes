@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>強連通元件 (Strongly Connected Components) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">強連通元件 (Strongly Connected Components)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>強連通元件 (Strongly Connected Components)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 25</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-25_241211_145203.pdf</code>、<code>手寫筆記_White_path_thm.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">圖論</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>\(u\leftrightarrow v\)（mutually reachable）是 equivalence relation → 把頂點分組，每組的 induced subgraph 是一個 <strong>SCC</strong>。</li>
+          <li>把每條邊反向得到 \(H\)：\(G\) 與 \(H\) 的 SCC 相同。</li>
+          <li>把每個 SCC 縮成一點得到 <strong>component graph</strong>，它一定是 <strong>acyclic</strong>。</li>
+          <li>演算法：在 \(G\) 上做 DFS → 依 finishing time 由晚到早挑未拜訪的頂點，在反向圖 \(H\) 上做 BFS，每次找到一個 SCC → \(O(|V|+|E|)\)。</li>
+          <li>關鍵：DFS 中最後 finished 的頂點，所在的 SCC 在 \(G\) 的 component graph 中 in-degree 為 0（在 \(H\) 中 out-degree 為 0）。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="definition">1. 定義</h2>
+      <ul>
+        <li>設 \(G\) 是 directed graph。若 \(u\) 能到達 \(v\)，且 \(v\) 也能到達 \(u\)，則兩者 <strong>mutually reachable</strong>，記為 \(u\leftrightarrow v\)；假設對每個頂點 \(u\)，\(u\leftrightarrow u\)。</li>
+        <li>\(\leftrightarrow\) 是 <strong>equivalence relation</strong> → 可以用它把頂點分組：\(u\)、\(v\) 在同一組 ⇔ \(u\leftrightarrow v\)。</li>
+        <li>每一組的 induced subgraph 稱為一個 <strong>Strongly Connected Component (SCC)</strong>。</li>
+      </ul>
+      <p class="src">Algo-Lecture-25_241211_145203.pdf p.3–5；手寫筆記_White_path_thm.pdf p.5</p>
+
+      <!-- ===================================================== -->
+      <h2 id="properties">2. SCC 的性質</h2>
+      <h3 id="reverse">反向圖</h3>
+      <p>把 \(G\) 的每條邊反向，得到 \(H\)（頂點相同）。則 \(u\leftrightarrow v\) in \(G\) ⇔ \(u\leftrightarrow v\) in \(H\) → \(G\) 的每個 SCC 在 \(H\) 中都有對應的 SCC（同一組頂點）。</p>
+      <p class="src">Algo-Lecture-25_241211_145203.pdf p.6</p>
+
+      <h3 id="component-graph">Component Graph</h3>
+      <p>把 \(G\) 的每個 SCC 縮成一個頂點，並移除 loop、把多重邊變成單一邊，得到的 simple graph 稱為 \(G\) 的 <strong>component graph</strong>。</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">性質</span>
+          \(G\) 的 component graph 是 <strong>acyclic</strong>。<br>
+          證明：假設有 cycle，則 component graph 中存在 \(v_j\leftrightarrow v_k\) → 它們對應的 SCC \(V_j\)、\(V_k\) 的頂點彼此可達 → 應該是同一個 SCC，矛盾。
+        </div>
+      </div>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子（講義與手寫筆記）</span>
+          圖中的頂點 r, s, t, u, v, w, x, y 被分成三個 SCC，縮點後的 component graph 為 \(v_1\to v_2\to v_3\)。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-25_241211_145203.pdf p.9–10；手寫筆記_White_path_thm.pdf p.5</p>
+
+      <h3 id="bfs-in-h">在 \(H\) 上做 BFS</h3>
+      <ul>
+        <li>若在 \(H\) 上以 \(x\) 為 source 做 BFS，而 \(x\) 所在的 SCC 在 <strong>\(H\) 的 component graph 中 out-degree 為 0</strong>，則 BFS 會剛好拜訪和 \(x\) 同一個 SCC 的頂點。</li>
+      </ul>
+      <p class="src">Algo-Lecture-25_241211_145203.pdf p.11–13</p>
+
+      <!-- ===================================================== -->
+      <h2 id="algorithm">3. 找出所有 SCC</h2>
+      <h3 id="strategy">策略</h3>
+      <pre><span class="pseudo-label">Basic strategy</span><code>1. while ( H contains unvisited vertex ) {
+2.     Pick a vertex x;
+3.     Find all vertices in the same SCC as x;
+4.     Visit all vertices found in Line 3;
+5. }</code></pre>
+      <p>找 \(G\) 的所有 SCC 等於找 \(H\) 的所有 SCC。為了有效率，要小心選 \(x\)：</p>
+      <pre><span class="pseudo-label">Refined strategy</span><code>1. while ( H contains unvisited vertex ) {
+2.     Pick an unvisited vertex x inside an SCC, whose
+       corresponding vertex in component graph of H
+       has out-degree 0;
+3.     Run BFS, with source x, in H;
+4. }</code></pre>
+      <p>怎麼找到這樣的 \(x\)？</p>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Claim</span>
+          在原圖 \(G\) 上做 DFS，<strong>finishing time 最晚</strong>的頂點 \(u\) 就是一個合格的 \(x\)：\(u\) 所在的 SCC 在「\(H\) 的 component graph」中 out-degree 為 0；等價地，在「\(G\) 的 component graph」中 in-degree 為 0。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-25_241211_145203.pdf p.7–8, p.14–15；手寫筆記_White_path_thm.pdf p.5</p>
+
+      <h3 id="final-algorithm">最終演算法</h3>
+      <pre><span class="pseudo-label">Finding SCCs</span><code>1. Run DFS on G; Get reverse graph H of G;
+2. Set all vertices as unvisited;
+3. while ( H contains unvisited vertex ) {
+4.     Pick an unvisited vertex u with latest finishing time;
+5.     Run BFS, with source u, in H;
+6. } /* Total Time: O(|V|+|E|) */</code></pre>
+      <p>也可以交換 \(G\) 與 \(H\) 的角色：</p>
+      <pre><span class="pseudo-label">Finding SCCs（交換 G、H）</span><code>1. Get reverse graph H of G; Run DFS on H;
+2. Set all vertices as unvisited;
+3. while ( G contains unvisited vertex ) {
+4.     Pick an unvisited vertex u with latest finishing time;
+5.     Run BFS, with source u, in G;
+6. } /* Total Time: O(|V|+|E|) */</code></pre>
+      <p class="src">Algo-Lecture-25_241211_145203.pdf p.16–17；手寫筆記_White_path_thm.pdf p.5</p>
+
+      <!-- ===================================================== -->
+      <h2 id="correctness">4. Claim 的正確性</h2>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Theorem</span>
+          在 \(G\) 上做 DFS，若 \(G\) 的 component graph 中有邊 \((w,v)\)，則 DFS 最後 finished 的頂點不可能在 \(v\) 的 SCC 中。
+        </div>
+      </div>
+      <p>證明：</p>
+      <ul>
+        <li>令 \(x\) = SCC(\(w\)) 中第一個被 DFS discover 的頂點；\(y\) = SCC(\(v\)) 中第一個被 discover 的頂點；\(z\) = SCC(\(v\)) 中最後 finished 的頂點（\(z\) 可能等於 \(y\)）。</li>
+        <li>由 White-Path Theorem：\(d(y)\le d(z)&lt;f(z)\le f(y)\)。</li>
+        <li><strong>Case 1</strong>：\(d(x)&lt;d(y)\) → 由 White-Path，\(d(x)&lt;d(z)&lt;f(z)&lt;f(x)\)。</li>
+        <li><strong>Case 2</strong>：\(d(y)&lt;d(x)\) → SCC(\(v\)) 的所有頂點在 \(x\) 開始前就拜訪完 → \(f(z)&lt;d(x)&lt;f(x)\)。</li>
+        <li>兩種情況 SCC(\(w\)) 中都有頂點比 \(z\) 晚 finished → 最後 finished 的頂點不會是 \(z\)，也就不會在 SCC(\(v\)) 中。</li>
+      </ul>
+      <p>因此最後 finished 的頂點所在的 SCC 沒有 incoming edge（in-degree 0），Claim 成立。</p>
+      <p class="src">Algo-Lecture-25_241211_145203.pdf p.18–20</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 什麼是 SCC？</summary>
+        <div class="answer">
+          <p>用 mutually reachable 關係 \(\leftrightarrow\)（equivalence relation）把頂點分組，每一組的 induced subgraph 就是一個 SCC。</p>
+          <p class="src">Algo-Lecture-25_241211_145203.pdf p.3–4</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. 為什麼 component graph 一定是 acyclic？</summary>
+        <div class="answer">
+          <p>若有 cycle，cycle 上兩個 SCC 的頂點彼此可達，應該屬於同一個 SCC，矛盾。</p>
+          <p class="src">Algo-Lecture-25_241211_145203.pdf p.10</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 寫出找所有 SCC 的演算法。</summary>
+        <div class="answer">
+          <p>在 \(G\) 上做 DFS 並取得反向圖 \(H\)；把所有頂點設為 unvisited；當 \(H\) 還有未拜訪的頂點，挑 finishing time 最晚的未拜訪頂點 \(u\)，在 \(H\) 上以 \(u\) 為 source 做 BFS。總時間 \(O(|V|+|E|)\)。</p>
+          <p class="src">Algo-Lecture-25_241211_145203.pdf p.16</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. DFS 中最後 finished 的頂點 \(u\) 有什麼性質？</summary>
+        <div class="answer">
+          <p>\(u\) 所在的 SCC 在 \(G\) 的 component graph 中 in-degree 為 0，等價於在 \(H\) 的 component graph 中 out-degree 為 0。</p>
+          <p class="src">Algo-Lecture-25_241211_145203.pdf p.15</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 證明 Claim 時，Case 2（\(d(y)&lt;d(x)\)）為什麼得到 \(f(z)&lt;d(x)\)？</summary>
+        <div class="answer">
+          <p>因為 SCC(\(v\)) 的所有頂點在 \(x\) 開始被 DFS 前就已經拜訪完（\(v\) 無法回到 \(w\) 的 SCC）。</p>
+          <p class="src">Algo-Lecture-25_241211_145203.pdf p.20</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-25_241211_145203.pdf</code>　p.1–20（CS 4311 Introduction to Algorithms, Lecture 25）</li>
+        <li><code>手寫筆記_White_path_thm.pdf</code>　p.5</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>最小生成樹 (Minimum Spanning Tree) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">最小生成樹 (Minimum Spanning Tree)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>最小生成樹 (Minimum Spanning Tree)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 26</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-26_241214_110540.pdf</code>、<code>手寫筆記_MST.pdf</code>、<code>手寫筆記_White_path_thm.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">圖論</span>
+          <span class="tag">貪婪演算法</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li><strong>MST</strong>：邊權重總和最小的 spanning tree；不一定唯一。假設邊權重都不同（相同時任意排序）。</li>
+          <li><strong>Greedy Choice Lemma</strong>：每個頂點 \(v\) 最便宜的邊 \(e_v\) 一定在 MST 中。</li>
+          <li><strong>Optimal Substructure</strong>：已知在 MST 中的邊 \(E^*\) 縮點後得 \(G^*\)，\(G^*\) 的 MST 加上 \(E^*\) 就是 \(G\) 的 MST。</li>
+          <li>Kruskal（全域最便宜的邊）\(O(E\log V)\)；Prim（source 旁最便宜的邊）binary heap \(O(E\log V)\)、Fibonacci heap \(O(E+V\log V)\)；Borůvka（每個頂點都取最便宜的邊）\(O(E\log V)\)。</li>
+          <li>先跑 Borůvka \(\log\log V\) 次再換 Prim → \(O(E\log\log V)\)，\(E\) 接近 \(V\) 時比 Prim 好。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="definition">1. Spanning Tree 與 MST</h2>
+      <ul>
+        <li>設 \(G=(V,E)\) 是 connected undirected graph。\(G\) 的 <strong>spanning tree</strong> 是只用 \(G\) 的邊、連接所有頂點的一棵樹。</li>
+        <li>邊有權重時（weight ⇔ 使用該邊的 cost），<strong>minimum spanning tree (MST)</strong> 是邊權重總和最小的 spanning tree。</li>
+        <li>MST 不一定唯一。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>年份</th><th>演算法</th></tr></thead>
+          <tbody>
+            <tr><td>Borůvka [1926]</td><td>第一個演算法</td></tr>
+            <tr><td>Kruskal [1956]</td><td>Kruskal’s Algorithm</td></tr>
+            <tr><td>Jarník [1930]、Prim [1957]</td><td>Prim’s Algorithm</td></tr>
+            <tr><td>Fredman-Tarjan [1987]</td><td>\(O(E\log^* V)\)</td></tr>
+            <tr><td>Gabow et al. [1986]</td><td>\(O(E\log\log^* V)\)</td></tr>
+            <tr><td>Chazelle [1999]</td><td>\(O(E\alpha(E,V))\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>假設（WLOG）</strong>：邊權重都不同；若有相同，就在權重相同的邊之間給一個任意順序，讓其中一條「比較便宜」。</p>
+      <p class="src">Algo-Lecture-26_241214_110540.pdf p.3–7；手寫筆記_MST.pdf p.1</p>
+
+      <!-- ===================================================== -->
+      <h2 id="greedy-choice">2. Greedy Choice Lemma</h2>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Theorem</span>
+          令 \(e_v\) 為連接頂點 \(v\) 最便宜的邊，則 \(G\) 的 MST 對每個頂點 \(v\) 都包含 \(e_v\)。
+        </div>
+      </div>
+      <h3 id="greedy-proof">證明（反證法）</h3>
+      <ol>
+        <li>假設 \(G\) 的 MST \(T\) 不包含 \(e_v=(u,v)\)。</li>
+        <li>把 \(e_v\) 加進 \(T\)：\(u\)、\(v\) 原本在 \(T\) 中就連通 → 形成 cycle \((u,v,w,\dots,u)\)。</li>
+        <li>由 \(e_v\) 的定義：\(\text{weight}(e_v)&lt;\text{weight}(v,w)\)。</li>
+        <li>刪掉 \((v,w)\)，得到一棵總權重比 \(T\) 更小的 spanning tree → 矛盾。</li>
+      </ol>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          手寫筆記_MST.pdf p.1 的證明寫「If we delete \((v,w)\), by definition \(\text{weight}(e_v)&lt;\text{weight}(u,w)\)」；講義 p.10 與手寫筆記_White_path_thm.pdf p.6 都寫 \(\text{weight}(e_v)&lt;\text{weight}(v,w)\)。上方依講義整理。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-26_241214_110540.pdf p.8–10；手寫筆記_MST.pdf p.1；手寫筆記_White_path_thm.pdf p.6</p>
+
+      <!-- ===================================================== -->
+      <h2 id="optimal-substructure">3. Optimal Substructure</h2>
+      <ul>
+        <li>令 \(E^*\) 為一組已知在 \(G\) 的 MST 中的邊。</li>
+        <li>令 \(G^*\) = 把 \(E^*\) 形成的每個 connected component 縮成一個頂點後得到的圖；\(T^*\) = \(G^*\) 的 MST。</li>
+      </ul>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">Theorem</span>
+          \(T^*\cup E^*\) 是 \(G\) 的 MST。（證明：反證法，講義省略。）
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-26_241214_110540.pdf p.11–12</p>
+
+      <!-- ===================================================== -->
+      <h2 id="kruskal">4. Kruskal’s Algorithm（取全域最小）</h2>
+      <pre><span class="pseudo-label">Kruskal-MST(G)</span><code>1. Remove self-loops in G
+2. Find the cheapest edge e
+3. Contract e to get a graph G*
+4. T* = Kruskal-MST(G*)
+5. Return T* ⋃ { e }</code></pre>
+      <p>手寫筆記的說法：找 \(G\) 中最便宜的邊 \(e\) → 把 \(e\) 的兩個端點合成一個節點 → 遞迴地找最便宜的邊，但避免形成 cycle。</p>
+      <h3 id="kruskal-time">實作與時間</h3>
+      <p>用 Disjoint Set Union-Find 實作：</p>
+      <ul>
+        <li>先依權重<strong>排序</strong>所有邊；</li>
+        <li>反覆挑權重最小的邊 \(e\)：若 \(e\) 連接兩個不同的 component，就把 \(e\) 加進 MST，並做 union 連接兩個 component；否則忽略。</li>
+      </ul>
+      \[\text{Total time}=O(\underbrace{E\log E}_{\text{sorting edges}}+\underbrace{E\,\alpha(E,V)}_{\text{union}})=O(E\log V)\]
+      <p class="src">Algo-Lecture-26_241214_110540.pdf p.13–19；手寫筆記_MST.pdf p.1；手寫筆記_White_path_thm.pdf p.6–7</p>
+
+      <!-- ===================================================== -->
+      <h2 id="prim">5. Prim’s Algorithm（取局部最小）</h2>
+      <pre><span class="pseudo-label">Prim-MST(G, u)</span><code>1. Set u as the source vertex
+2. Find the cheapest non-loop edge e attaching u
+3. Contract e to get a graph G*
+4. T* = Prim-MST(G*, u)
+5. Return T* ⋃ { e }</code></pre>
+
+      <h3 id="prim-binary">用 Binary Heap 實作</h3>
+      <ul>
+        <li>先把所有和 \(u\) 相鄰的邊 insert 進 heap \(H\)；</li>
+        <li>反覆挑權重最小的邊 \(e\)：若 \(e\) 把 \(u\) 連到一個不在 MST 中的頂點 \(v\)，就把 \(e\) 加進 MST，並把所有和 \(v\) 相鄰的邊 insert 進 \(H\)；否則忽略。</li>
+        <li>Total time：\(O(E\log E)=O(E\log V)\)。</li>
+      </ul>
+
+      <h3 id="prim-fibonacci">用 Fibonacci Heap 加速</h3>
+      <ul>
+        <li>heap 中存<strong>頂點</strong>而不是邊。</li>
+        <li>一開始把所有頂點 insert 進 \(F\)，key = \(\infty\)；source \(u\) 的 key 設為 0。key = 與 \(u\) 的距離 = 把這個頂點加進 MST 的 cost。</li>
+        <li>反覆挑 key 最小的頂點 \(v\)，用 \(v\) 的相鄰邊更新 \(v\) 的鄰居的 key。</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>操作</th><th>次數</th></tr></thead>
+          <tbody>
+            <tr><td>Insert</td><td>一開始 \(O(V)\) 次</td></tr>
+            <tr><td>Extract-Min</td><td>總共 \(O(V)\) 次</td></tr>
+            <tr><td>Decrease-Key</td><td>每個頂點 \(v\) 做 \(O(\deg(v))\) 次 → 總共 \(O(E)\) 次</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>→ Total time \(=O(E+V\log V)\)。</p>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          手寫筆記_White_path_thm.pdf p.8 在 \(O(E+V\lg V)\) 下方的註記，把 \(E\) 標為「Decrease Min」、把 \(\lg V\) 標為「Decrease key(?)」，筆記本身也打了問號。講義 p.33 的說法是：Decrease-Key 總共 \(O(E)\) 次、Extract-Min 總共 \(O(V)\) 次。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-26_241214_110540.pdf p.20–33；手寫筆記_MST.pdf p.1–2；手寫筆記_White_path_thm.pdf p.7–8</p>
+
+      <!-- ===================================================== -->
+      <h2 id="boruvka">6. Borůvka’s Algorithm（每個頂點都取局部最小）</h2>
+      <pre><span class="pseudo-label">Borůvka-MST(G)</span><code>1. Find the cheapest incident edge e_v for each vertex v
+3. Contract all e_v to get a graph G*
+4. T* = Borůvka-MST(G*)
+5. Return T* ⋃ { e_v | v is a vertex of G }</code></pre>
+      <p>（講義原文的步驟編號為 1、3、4、5；手寫筆記把同樣的四個步驟編為 1–4。）</p>
+      <h3 id="boruvka-time">時間</h3>
+      <ul>
+        <li>Step 1：\(O(E)\)（不需要排序邊）。</li>
+        <li>Step 2（縮點）：用 BFS 或 DFS，\(O(E)\)。</li>
+        <li>縮點後 \(G^*\) 的每個 connected component 至少對應 \(G\) 的 2 個頂點 → \(G^*\) 的頂點數 \(\le V/2\)（手寫筆記：每次 combine 時，至少會減少一半的 vertices）。</li>
+        <li>Total time \(=O(E\log V)\)。</li>
+      </ul>
+      <h3 id="boruvka-prim">Borůvka + Prim</h3>
+      <ul>
+        <li>只跑 Borůvka \(\log\log V\) 次 → 最後的圖頂點數 \(\le V/\log V\)。</li>
+        <li>此時改用 Prim：
+          \[O(E\log\log V)+O\!\left(E+\frac{V}{\log V}\log V\right)=O(E\log\log V)\]
+        </li>
+        <li>→ 當 \(E\) 接近 \(V\) 時比 Prim 好（手寫筆記：在某些 condition 比兩者單獨快）。</li>
+      </ul>
+      <p class="src">Algo-Lecture-26_241214_110540.pdf p.34–38；手寫筆記_MST.pdf p.2；手寫筆記_White_path_thm.pdf p.9</p>
+
+      <!-- ===================================================== -->
+      <h2 id="comparison">7. 三種演算法比較</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>演算法</th><th>每一步選的邊</th><th>實作</th><th>時間</th></tr></thead>
+          <tbody>
+            <tr><td>Kruskal</td><td>全域最便宜的邊</td><td>排序 + Union-Find</td><td>\(O(E\log V)\)</td></tr>
+            <tr><td>Prim</td><td>連接 source 最便宜的邊</td><td>Binary Heap</td><td>\(O(E\log V)\)</td></tr>
+            <tr><td>Prim</td><td>同上</td><td>Fibonacci Heap</td><td>\(O(E+V\log V)\)</td></tr>
+            <tr><td>Borůvka</td><td>每個頂點最便宜的邊</td><td>BFS／DFS 縮點</td><td>\(O(E\log V)\)</td></tr>
+            <tr><td>Borůvka + Prim</td><td>先 Borůvka \(\log\log V\) 次</td><td>—</td><td>\(O(E\log\log V)\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src">Algo-Lecture-26_241214_110540.pdf p.19, p.26, p.33, p.37–38</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. 敘述並證明 Greedy Choice Lemma。</summary>
+        <div class="answer">
+          <p>每個頂點 \(v\) 最便宜的邊 \(e_v\) 都在 MST 中。若 MST \(T\) 不含 \(e_v=(u,v)\)，加入 \(e_v\) 形成 cycle \((u,v,w,\dots,u)\)；因為 \(\text{weight}(e_v)&lt;\text{weight}(v,w)\)，刪掉 \((v,w)\) 會得到更便宜的 spanning tree，矛盾。</p>
+          <p class="src">Algo-Lecture-26_241214_110540.pdf p.8–10</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Kruskal 用 Union-Find 實作的時間是多少？分別來自哪裡？</summary>
+        <div class="answer">
+          <p>\(O(E\log E+E\alpha(E,V))=O(E\log V)\)：\(E\log E\) 來自排序邊，\(E\alpha(E,V)\) 來自 union。</p>
+          <p class="src">Algo-Lecture-26_241214_110540.pdf p.19；手寫筆記_MST.pdf p.1</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. Prim 用 Fibonacci heap 時，heap 存什麼？key 代表什麼？總時間多少？</summary>
+        <div class="answer">
+          <p>存頂點；key = 與 source \(u\) 的距離 = 把該頂點加進 MST 的 cost。\(O(V)\) 次 insert 與 extract-min、\(O(E)\) 次 decrease-key → \(O(E+V\log V)\)。</p>
+          <p class="src">Algo-Lecture-26_241214_110540.pdf p.27, p.33</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 為什麼 Borůvka 的總時間是 \(O(E\log V)\)？</summary>
+        <div class="answer">
+          <p>每一輪 Step 1、Step 2 都是 \(O(E)\)，而縮點後頂點數至少減半，所以最多 \(O(\log V)\) 輪。</p>
+          <p class="src">Algo-Lecture-26_241214_110540.pdf p.37</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. 先跑 Borůvka \(\log\log V\) 次再換 Prim，總時間是多少？</summary>
+        <div class="answer">
+          <p>\(O(E\log\log V)+O(E+(V/\log V)\log V)=O(E\log\log V)\)，當 \(E\) 接近 \(V\) 時比 Prim 好。</p>
+          <p class="src">Algo-Lecture-26_241214_110540.pdf p.38</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-26_241214_110540.pdf</code>　p.1–38（CS 4311 Introduction to Algorithms, Lecture 26）</li>
+        <li><code>手寫筆記_MST.pdf</code>　p.1–2</li>
+        <li><code>手寫筆記_White_path_thm.pdf</code>　p.6–9</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>

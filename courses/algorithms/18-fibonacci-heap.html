@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>費氏堆積 (Fibonacci Heap) · 演算法</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../../assets/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="../../data/courses.js"></script>
+  <script defer src="../../assets/js/main.js"></script>
+</head>
+<body data-page="note" data-course="algorithms" data-root="../../">
+
+  <nav class="topbar">
+    <div class="container breadcrumb">
+      <a href="../../index.html">📚 首頁</a>
+      <span class="sep">/</span>
+      <a href="index.html">演算法</a>
+      <span class="sep">/</span>
+      <span class="current">費氏堆積 (Fibonacci Heap)</span>
+    </div>
+  </nav>
+
+  <div class="note-layout">
+    <aside class="toc">
+      <details open>
+        <summary>目錄</summary>
+        <ol id="toc-list"></ol>
+      </details>
+    </aside>
+
+    <article class="note">
+      <header class="note-head">
+        <div id="note-icon"></div>
+        <h1>費氏堆積 (Fibonacci Heap)</h1>
+        <dl class="note-meta">
+          <dt>課程</dt><dd>演算法</dd>
+          <dt>單元</dt><dd>Lecture 18–19</dd>
+          <dt>整理日期</dt><dd>2026-11-16</dd>
+          <dt>來源</dt><dd><code>Algo-Lecture-18_241127_150056.pdf</code>、<code>Algo-Lecture-19_241201_132934.pdf</code>、<code>手寫筆記_binomial heap.pdf</code></dd>
+        </dl>
+        <div class="tags">
+          <span class="tag">堆積</span>
+          <span class="tag">攤銷分析</span>
+        </div>
+      </header>
+
+      <h2 id="tldr">重點摘要</h2>
+      <div class="tldr">
+        <ul>
+          <li>Fibonacci Heap：Find-Min、Insert、Union、Decrease-Key 為攤銷 \(O(1)\)；Extract-Min、Delete 為攤銷 \(O(\log n)\)。</li>
+          <li>樹的數量與高度都沒有限制；Union 只是把兩個 heap 放在一起，Extract-Min 時才 <strong>consolidate</strong>（把 degree 相同的 root 連起來）。</li>
+          <li>Decrease-Key：值比 parent 小就<strong>切下來</strong>變成新的樹；<strong>marking policy</strong>：第一次失去 child 時 mark，第二次失去 child 時自己也切下來（cascading cuts）。</li>
+          <li>Marking 保證 degree 為 \(k\) 的子樹至少有 \(F_{k+1}\) 個節點 → 任何節點 degree \(\le\log_\Phi n\approx 1.4405\log n\)。</li>
+          <li>Accounting method：每個 root 存 $1、每個 marked node 存 $2；Insert $2、Find-Min／Union $1、Decrease-Key $4。</li>
+        </ul>
+      </div>
+
+      <!-- ===================================================== -->
+      <h2 id="intro">1. Fibonacci Heap 的結構</h2>
+      <ul>
+        <li>和 Binomial Heap 一樣，由一組 component tree 組成，節點滿足 heap property。</li>
+        <li>但和 Binomial Heap 不同：
+          <ul>
+            <li><strong>component tree 的數量沒有限制</strong>（可能多達 \(n\)）→ Extract-Min 的 worst-case 是 \(O(n)\)；</li>
+            <li><strong>component tree 的高度沒有限制</strong>（可能多達 \(n\)）→ 需要新的 Decrease-Key 做法。</li>
+          </ul>
+        </li>
+        <li>用特殊的 <strong>marking policy</strong> 讓節點的 degree 有上界。想法：如果一個節點的 degree 很大，它一定有很多子孫。之後會證明：任何節點的 degree \(\le 1.4405\log n\)。</li>
+      </ul>
+      <p class="src">Algo-Lecture-18_241127_150056.pdf p.2–3, p.7；手寫筆記_binomial heap.pdf p.4</p>
+
+      <!-- ===================================================== -->
+      <h2 id="operations">2. 操作</h2>
+      <h3 id="find-min-union">Find-Min、Union、Insert</h3>
+      <ul>
+        <li>Heap \(H\) 隨時維護一個指標 \(\min(H)\) 指向最小值的節點 → <strong>Find-Min</strong> 為 \(O(1)\)。</li>
+        <li><strong>Union</strong> \(H_1\)、\(H_2\)：直接把兩個 heap 放在一起成為 \(H\)，並設 \(\min(H)=\min\{\min(H_1),\min(H_2)\}\)。</li>
+        <li><strong>Insert</strong> 是 Union 的特例 → 兩者都是 \(O(1)\)。</li>
+      </ul>
+      <p class="src">Algo-Lecture-18_241127_150056.pdf p.4–6；手寫筆記_binomial heap.pdf p.4</p>
+
+      <h3 id="extract-min">Extract-Min</h3>
+      <ol>
+        <li><strong>Remove</strong>：移除最小值的 root → 它的 children 成為新樹的 root。</li>
+        <li><strong>Consolidate</strong>：反覆把 <strong>degree 相同</strong>的 root 連起來 → 最後所有 root 的 degree 都不同。</li>
+        <li><strong>Update</strong>：更新 \(\min(H)\)。</li>
+      </ol>
+      <ul>
+        <li>Consolidate 時以任意順序逐一檢查每棵樹；使用陣列 \(A[1..M]\)（\(M\) = 所有節點的最大 degree），\(A[k]\) 存一棵 root degree 為 \(k\) 的樹。</li>
+        <li>任何時候每種 degree 最多保留一棵樹；若有兩棵，就把它們的 root 連起來。</li>
+      </ul>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子（講義與手寫筆記）</span>
+          移除 \(\min(H)=8\) 後，它的 children 25、13 成為 root → 25 與 13（degree 0）連接成 13–25 → 12 與 13（degree 1）連接，12 成為 root → 最後 \(\min(H)=12\)。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-18_241127_150056.pdf p.8–15；手寫筆記_binomial heap.pdf p.4–5</p>
+
+      <h3 id="decrease-key">Decrease-Key</h3>
+      <ul>
+        <li>Binary／Binomial Heap 的 Decrease-Key 是和 parent 反覆交換；樹高 \(O(\log n)\) 所以有效率。</li>
+        <li>Fibonacci Heap 的樹高沒有上界，而且希望 Decrease-Key 是攤銷 \(O(1)\) → 用完全不同的做法：</li>
+      </ul>
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">做法</span>
+          對 \(x\) 做 Decrease-Key 後，若值比 parent 小，就把 \(x\) <strong>從 parent 切下來</strong>，讓 \(x\) 成為一棵新樹的 root。
+        </div>
+      </div>
+      <p>但為了 Extract-Min 的效率，要避免出現「degree 很大但子孫很少」的節點 → 加上 <strong>marking</strong>：</p>
+      <ol>
+        <li>節點 \(v\) <strong>第一次</strong>失去 child → mark \(v\)。</li>
+        <li>節點 \(v\) <strong>第二次</strong>失去 child → 把 \(v\) 從它的 parent 切下來，並 unmark \(v\)（避免 \(v\) 的 parent 連著一棵子孫很少的子樹）。</li>
+      </ol>
+      <div class="callout callout-warn">
+        <span class="callout-icon">❗</span>
+        <div class="callout-body">
+          <span class="callout-title">注意</span>
+          <ul>
+            <li>Tree root 沒有 parent 可以切 → root 可以選擇 unmark（optional）。</li>
+            <li>\(x\) 從 \(v\) 切下時，若 \(v\) 已被 mark，\(v\) 也要切下，接著 \(v\) 的 parent 也可能被切…稱為 <strong>cascading cuts</strong>，最多可達 \(O(n)\)（手寫筆記：detachment 可能會有連鎖反應）。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout callout-example">
+        <span class="callout-icon">📝</span>
+        <div class="callout-body">
+          <span class="callout-title">例子</span>
+          <ol>
+            <li>32 降為 18：18 仍不小於 parent 15 → 不用切。</li>
+            <li>21 降為 3：3 比 parent 19 小 → 切下 3，成為新 root，\(\min(H)=3\)；19 第一次失去 child → 被 mark。</li>
+            <li>35 降為 14：切下 14；parent 27 已被 mark → 27 也切下並 unmark；27 的 parent 19 已被 mark → 19 也切下（cascading cuts）。</li>
+          </ol>
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-18_241127_150056.pdf p.16–24；手寫筆記_binomial heap.pdf p.5–6</p>
+
+      <!-- ===================================================== -->
+      <h2 id="max-degree">3. 最大 Degree 的上界</h2>
+      <p>設節點 \(x\) 的 degree 為 \(k\)，children 依成為 \(x\) 的 child 的時間標為 \(y_1,y_2,\dots,y_k\)（\(y_1\) 最舊）。</p>
+      <ul>
+        <li>\(y_1\)、\(y_2\) 的 degree 至少為 0。</li>
+        <li>Consolidate 時 \(y_3\) 被加為 \(x\) 的 child，那時 \(y_1\)、\(y_2\) 都已是 \(x\) 的 children → 當時 \(\deg(y_3)=\deg(x)\ge 2\)；之後 \(y_3\) 可能失去 child（最多一個，否則會被切掉）→ 現在 \(\deg(y_3)\ge 1\)。</li>
+        <li>同理 \(y_4\) 加入時 \(\deg(y_4)=\deg(x)\ge 3\) → 現在 \(\deg(y_4)\ge 2\)。</li>
+        <li>一般而言，現在 \(\deg(y_j)\ge j-2\)。</li>
+      </ul>
+      <p>令 \(N_k\) = root degree 為 \(k\) 的子樹最少的節點數：</p>
+      \[N_0=1,\ N_1=1+N_0=2,\ N_2=1+N_0+N_0=3,\ N_3=1+N_0+N_0+N_1=5,\ N_4=1+N_0+N_0+N_1+N_2=8\]
+      <div class="callout callout-key">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <span class="callout-title">結論</span>
+          由歸納法，\(N_k\) = 第 \(k+1\) 個 Fibonacci number \(F_{k+1}\)（這就是 Fibonacci heap 名稱的由來）。
+          因為 \(F_{k+1}\ge\Phi^k\)，其中 \(\Phi=\frac{\sqrt5+1}{2}\) 為黃金比例 →
+          \[\text{Degree of any node}\le\log_\Phi n\approx 1.4405\log n\]
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-19_241201_132934.pdf p.3–6；手寫筆記_binomial heap.pdf p.6–7</p>
+
+      <!-- ===================================================== -->
+      <h2 id="amortized">4. 攤銷成本 (Accounting Method)</h2>
+      <p>Excess 存在每個 <strong>tree root（各 $1）</strong>與每個 <strong>marked node（各 $2）</strong>上。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>操作</th><th>攤銷成本</th><th>說明</th></tr></thead>
+          <tbody>
+            <tr><td>Insert</td><td>$2</td><td>$1 付實際成本、$1 存在新 root</td></tr>
+            <tr><td>Find-Min／Union</td><td>$1</td><td>付實際成本</td></tr>
+            <tr><td>Extract-Min</td><td>\(O(\log n)\)</td><td>見下方</td></tr>
+            <tr><td>Decrease-Key</td><td>$4 = \(O(1)\)</td><td>見下方</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="amortized-extract">Extract-Min</h3>
+      <ul>
+        <li>Consolidate 時處理 root degree 為 \(k\) 的樹，用<strong>這棵樹自己的 excess</strong> 支付：放進陣列 \(A\)、被連成另一個節點的 child、把合併後的樹移到 \(A\) 的其他格子。</li>
+        <li>→ 除了初始化陣列 \(A\) 之外，consolidate 的實際成本都已付清。攤銷成本只需處理：
+          <ol>
+            <li>移除最小值節點 → \(O(\log n)\)</li>
+            <li>初始化陣列 \(A\) → \(O(\log n)\)</li>
+            <li>替最後的 tree roots 補充 excess → \(O(\log n)\)</li>
+          </ol>
+          合計 \(O(\log n)\)。</li>
+      </ul>
+
+      <h3 id="amortized-decrease">Decrease-Key（攤銷成本 $4）</h3>
+      <ol>
+        <li><strong>目前節點沒被切下</strong>：實際成本 1 → 足夠。</li>
+        <li><strong>被切下，且 parent 未被 mark</strong>：$1 付實際成本、$1 存在目前節點（現在是 root）、$2 存在 parent（現在被 mark）。</li>
+        <li><strong>被切下，且 parent 已被 mark</strong>：設 cascading cuts 中有 \(c\) 個 marked node，每個用自己 $2 excess 中的 $1 付相關實際成本、$1 留著（現在是 root 且 unmarked）→ cascading cuts 的成本都已付清。攤銷成本只需處理：$1 付目前節點的實際成本、$1 存在目前節點（現在是 root）、$2 存在最後一個 cascading cut 節點的 parent。</li>
+      </ol>
+      <p class="src">Algo-Lecture-19_241201_132934.pdf p.7–12；手寫筆記_binomial heap.pdf p.7–8</p>
+
+      <!-- ===================================================== -->
+      <h2 id="comparison">5. 三種 Heap 的比較</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>操作</th><th>Binary</th><th>Binomial</th><th>Fibonacci</th></tr></thead>
+          <tbody>
+            <tr><td>Make-Heap</td><td>\(O(1)\)</td><td>\(O(1)\)</td><td>\(O(1)\)</td></tr>
+            <tr><td>Find-Min</td><td>\(O(1)\)</td><td>\(O(1)\)</td><td>\(O(1)\)</td></tr>
+            <tr><td>Insert</td><td>\(O(\log n)\)</td><td>\(O(\log n)\)</td><td>\(O(1)\)</td></tr>
+            <tr><td>Extract-Min</td><td>\(O(1)\)</td><td>\(O(\log n)\)</td><td>\(O(\log n)\)*</td></tr>
+            <tr><td>Decrease-Key</td><td>\(O(\log n)\)</td><td>\(O(\log n)\)</td><td>\(O(1)\)*</td></tr>
+            <tr><td>Delete</td><td>\(O(\log n)\)</td><td>\(O(\log n)\)</td><td>\(O(\log n)\)*</td></tr>
+            <tr><td>Union</td><td>\(O(n)\)</td><td>\(O(\log n)\)</td><td>\(O(1)\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>* 為 amortized time。</p>
+      <div class="callout callout-check">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <span class="callout-title">待確認</span>
+          講義 Lecture 19 p.13 與手寫筆記 p.8 的表格中，Binary heap 的 Extract-Min 都寫 \(O(1)\)；但 Lecture 04 p.18 說明 binary heap 的 Extract-Min 為 \(O(\log n)\)。表格依原文照錄，請對照確認。
+        </div>
+      </div>
+      <p class="src">Algo-Lecture-19_241201_132934.pdf p.13；手寫筆記_binomial heap.pdf p.8</p>
+
+      <!-- ===================================================== -->
+      <h2 id="quiz">自我測驗</h2>
+      <details class="quiz">
+        <summary>Q1. Fibonacci Heap 的 Union 怎麼做？為什麼是 \(O(1)\)？</summary>
+        <div class="answer">
+          <p>直接把兩個 heap 放在一起，並設 \(\min(H)=\min\{\min(H_1),\min(H_2)\}\)，不需要合併任何樹。</p>
+          <p class="src">Algo-Lecture-18_241127_150056.pdf p.4</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q2. Extract-Min 的三個步驟是什麼？</summary>
+        <div class="answer">
+          <p>移除最小值的 root（children 成為新 root）→ consolidate：反覆連接 degree 相同的 root，直到所有 root 的 degree 都不同 → 更新 \(\min(H)\)。</p>
+          <p class="src">Algo-Lecture-18_241127_150056.pdf p.8</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q3. 說明 marking policy。</summary>
+        <div class="answer">
+          <p>節點第一次失去 child 時被 mark；第二次失去 child 時，把它從 parent 切下來並 unmark。這可能引發 cascading cuts。</p>
+          <p class="src">Algo-Lecture-18_241127_150056.pdf p.19, p.24</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q4. 為什麼任何節點的 degree \(\le 1.4405\log n\)？</summary>
+        <div class="answer">
+          <p>第 \(j\) 個 child 的 degree \(\ge j-2\)，所以 root degree 為 \(k\) 的子樹至少有 \(N_k=F_{k+1}\ge\Phi^k\) 個節點，故 degree \(\le\log_\Phi n\approx 1.4405\log n\)。</p>
+          <p class="src">Algo-Lecture-19_241201_132934.pdf p.4–6</p>
+        </div>
+      </details>
+      <details class="quiz">
+        <summary>Q5. Accounting method 中 excess 存在哪裡？Insert 與 Decrease-Key 的攤銷成本各是多少？</summary>
+        <div class="answer">
+          <p>每個 tree root 存 $1、每個 marked node 存 $2。Insert 為 $2，Decrease-Key 為 $4。</p>
+          <p class="src">Algo-Lecture-19_241201_132934.pdf p.7, p.10</p>
+        </div>
+      </details>
+
+      <h2 id="sources">來源</h2>
+      <ul class="source-list">
+        <li><code>Algo-Lecture-18_241127_150056.pdf</code>　p.1–25（CS 4311 Introduction to Algorithms, Lecture 18）</li>
+        <li><code>Algo-Lecture-19_241201_132934.pdf</code>　p.1–13（Lecture 19）</li>
+        <li><code>手寫筆記_binomial heap.pdf</code>　p.4–8</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">內容整理自個人上課講義與筆記，僅供個人複習使用。</div>
+  </footer>
+</body>
+</html>
